@@ -189,7 +189,7 @@ class ApplicationMainWindow(gtk.Window):
         dialog = gtk.AboutDialog()
         dialog.set_name('Immagine Image Viewer')
         dialog.set_copyright('\302\251 Copyright 2016 Matteo Franchin')
-        dialog.set_website('http://fnch.users.sf.net/')
+        dialog.set_website('https://github.com/mfnch/immagine')
         dialog.connect('response', lambda d, r: d.destroy())
         dialog.show()
 
