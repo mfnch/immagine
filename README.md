@@ -3,15 +3,14 @@ Image viewer with directory thumbnails and a focus on the browsing experience
 
 ## Status
 
-This software is under development. It can already be used, but is not feature
-complete. The user should expect bugs and misbehaviours here and there.
-Please, have a look at the license file in this directory, LICENSE. Use at your
-own risk! Contributions are welcome.
+This software is under development. It can be used already, despite not being
+feature complete. The user should expect bugs and misbehaviours here and there.
+Please, have a look at the [`LICENSE`](LICENSE) file in this directory.
+Use at your own risk! Contributions are welcome.
 
 ## Design considerations
 
-This project was created due to the lack of an image viewer which suits my
-personal needs. Below is a list of design considerations behind this project:
+Below is a list of design considerations behind this project:
 
 - Thumbnails are the most important feature while browsing a directory of
   images. All screen space should be used for thumbnails. Little screen space
