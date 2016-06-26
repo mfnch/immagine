@@ -118,6 +118,7 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
 
     def _update_scrollbars(self):
         '''(internal) Update the ranges and positions of the scrollbars.'''
+
         ha = self._hadjustment
         va = self._vadjustment
 
@@ -145,11 +146,20 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
             window_size = self.window.get_size()
             window_height = window_size[1]
 
+        # When resizing the window we want to make sure we view roughly the
+        # same images we saw before the resize.
+        old_album_height = va.upper
+        new_album_height = self.album.get_height() + 5
+        relative_pos = va.value / float(old_album_height)
+        new_value = relative_pos * new_album_height
+
+        # Set the new view, making sure it is within the interval.
         va.lower = 0.0
-        va.upper = self.album.get_height() + 5
+        va.upper = new_album_height
         va.page_size = window_height
         va.page_increment = 0.9*window_height
         va.step_increment = 0.3*window_height
+        va.value = max(0, min(new_value, new_album_height - window_height))
 
     def get_thumbnail_pixbuf(self, thumbnail):
         '''Get the pixbuf (possibly from the cache) for the given Thumbnail
