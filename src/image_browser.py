@@ -81,20 +81,20 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         self.connect('button-press-event', self.on_button_press_event)
         self.connect('query-tooltip', self.on_query_tooltip)
 
-    def get_hadjustment(self):
+    def _get_hadjustment(self):
         return self._hadjustment
 
-    def get_vadjustment(self):
+    def _get_vadjustment(self):
         return self._vadjustment
 
-    def set_hadjustment(self, adjustment):
+    def _set_hadjustment(self, adjustment):
         self._hadjustment = adjustment
 
-    def set_vadjustment(self, adjustment):
+    def _set_vadjustment(self, adjustment):
         self._vadjustment = adjustment
 
-    hadjustment = property(get_hadjustment, set_hadjustment)
-    vadjustment = property(get_vadjustment, set_vadjustment)
+    hadjustment = property(_get_hadjustment, _set_hadjustment)
+    vadjustment = property(_get_vadjustment, _set_vadjustment)
 
     def lay_out_album(self):
         new_width, _ = self.window.get_size()
@@ -111,9 +111,17 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
                 vadjustment.connect("value-changed", self._adjustments_changed)
             self._update_scrollbars()
 
+    def _set_y_location(self):
+        value = self._vadjustment.get_value()
+        upper = self._vadjustment.get_upper()
+        self.location.y = (value / float(upper) if upper != 0 else 0)
+
+    def _get_y_location(self):
+        return int(self.location.y * self._vadjustment.get_upper())
+
     def _adjustments_changed(self, adjustment):
         va = self._vadjustment
-        self.location.y = int(va.get_value())
+        self._set_y_location()
         self.queue_draw()
 
     def _update_scrollbars(self):
@@ -181,7 +189,7 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
     def on_expose_event(self, draw_area, event):
         '''Function responsible for the rendering of the widget.'''
 
-        dy = self.location.y
+        dy = self._get_y_location()
         ea = event.area
         x, y, width, height = (ea.x, ea.y + dy, ea.width, ea.height)
 
@@ -214,7 +222,8 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
 
     def on_button_press_event(self, eventbox, event):
         x, y = event.get_coords()
-        thumbnail = self.album.find_thumbnail_at_pos((x, self.location.y + y))
+        y += self._get_y_location()
+        thumbnail = self.album.find_thumbnail_at_pos((x, y))
         if thumbnail is not None:
             self.call('image_clicked', thumbnail.get_full_path())
         if thumbnail is not None and thumbnail.is_dir():
@@ -225,7 +234,8 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
     def on_query_tooltip(self, widget, x, y, keyboard_tip, tooltip):
         '''Called before rendering the tooltip.'''
 
-        thumbnail = self.album.find_thumbnail_at_pos((x, self.location.y + y))
+        y += self._get_y_location()
+        thumbnail = self.album.find_thumbnail_at_pos((x, y))
         if thumbnail is None:
             return False
 
@@ -295,7 +305,7 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
             location = Location(location)
 
         self.location = location
-        self._vadjustment.value = location.y
+        self._vadjustment.value = self._get_y_location()
         self.lay_out_album()
         self._update_scrollbars()
         self.call('directory_changed', location.path)
