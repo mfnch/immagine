@@ -80,11 +80,11 @@ class ApplicationMainWindow(gtk.Window):
         elif os.path.isdir(start_path):
             start_dir = start_path
         else:
-            start_dir = os.path.dirname(start_path)
+            start_dir = os.path.dirname(start_path) or os.getcwd()
             if not os.path.isdir(start_dir):
                 start_dir = os.getcwd()
-            else:
-                start_file = start_path
+            elif os.path.exists(start_path):
+                start_file = os.path.split(start_path)[1]
         self.browser_tab = self.open_tab(start_dir)
         if start_file is not None:
             self.open_tab(start_file)
