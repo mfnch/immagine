@@ -37,9 +37,16 @@ def build_image_thumbnail(image_path, size, orig_size=None):
         image.thumbnail(size)
     except:
         return None
+
     if image.size != size:
         print('got %s, required %s, %s'
               % (image.size, size, orig_size))
+
+    if image.mode != 'RGB':
+        image = image.convert('RGBA')
+        background = PIL.Image.new('RGBA', image.size, (255, 255, 255))
+        image = PIL.Image.alpha_composite(background, image).convert('RGB')
+
     return numpy.array(image)
 
 def build_directory_thumbnail(dir_path, size, orig_size=None):
