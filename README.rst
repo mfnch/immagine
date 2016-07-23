@@ -1,14 +1,17 @@
-# immagine
+========
+immagine
+========
 Image viewer with directory thumbnails and a focus on the browsing experience
 
-## Status
+Status
+======
 
 This software is under development. It can be used already, despite not being
 feature complete. The user should expect bugs and misbehaviours here and there.
-Please, have a look at the [`LICENSE`](LICENSE) file in this directory.
 Use at your own risk! Contributions are welcome.
 
-## Design considerations
+Design considerations
+=====================
 
 Below is a list of design considerations behind this project:
 
@@ -27,7 +30,8 @@ Below is a list of design considerations behind this project:
 
 - It may be desirable to show the names of subdirectories.
 
-## Design choices
+Design choices
+==============
 
 - Only Linux distros are targetted. No support for Windows or Mac OS is
   contemplated.

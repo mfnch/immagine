@@ -14,14 +14,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from distutils.core import setup
 
+def read(file_name):
+    dir_name = os.path.dirname(__file__)
+    with open(os.path.join(dir_name, file_name), 'r') as f:
+        return f.read()
+
 setup(name='immagine',
-      version='1.0',
+      version='0.1',
       description='Image viewer',
+      long_description=read('README.rst'),
       author='Matteo Franchin',
       author_email='fnch@users.sf.net',
-      url='http://fnch.users.sf.net/',
+      license='Apache License, Version 2.0',
+      url='https://github.com/mfnch/immagine',
+      keywords=['image viewer', 'image browser', 'thumbnail'],
+      classifiers=['Development Status :: 3 - Alpha',
+                   'Topic :: Multimedia :: Graphics :: Viewers',
+                   'License :: OSI Approved :: Apache Software License'],
       package_dir={'immagine': 'src'},
       packages=['immagine'],
       scripts=['scripts/immagine'])
