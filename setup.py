@@ -17,15 +17,9 @@
 import os
 from distutils.core import setup
 
-def read(file_name):
-    dir_name = os.path.dirname(__file__)
-    with open(os.path.join(dir_name, file_name), 'r') as f:
-        return f.read()
-
 setup(name='immagine',
       version='0.1',
       description='Image viewer',
-      long_description=read('README.rst'),
       author='Matteo Franchin',
       author_email='fnch@users.sf.net',
       license='Apache License, Version 2.0',
