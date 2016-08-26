@@ -19,9 +19,10 @@ import gobject
 import gtk
 import layout
 
-from thumbnailers import build_empty_thumbnail
-from orchestrator import Orchestrator, THUMBNAIL_DONE
-from backcaller import BackCaller
+from . import icons
+from .thumbnailers import build_empty_thumbnail
+from .orchestrator import Orchestrator, THUMBNAIL_DONE
+from .backcaller import BackCaller
 
 class Location(object):
     def __init__(self, full_path, y_pos=0):
@@ -179,6 +180,11 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         if tn.state is THUMBNAIL_DONE:
             return \
               gtk.gdk.pixbuf_new_from_array(tn.data, gtk.gdk.COLORSPACE_RGB, 8)
+        file_name = os.path.split(full_path)[1]
+        return icons.generate_text_icon('Loading...\n' + file_name,
+                                        thumbnail.size,
+                                        cache=True,
+                                        out_format=icons.FORMAT_PIXBUF)
         return build_empty_thumbnail(thumbnail.size)
 
     def on_thumbnail_available(self, *args):

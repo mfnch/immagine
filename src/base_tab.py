@@ -19,7 +19,7 @@ pygtk.require('2.0')
 import gtk
 import pango
 
-from backcaller import BackCaller
+from .backcaller import BackCaller
 
 def add_close_button(label):
     hb = gtk.HBox(False, 0)

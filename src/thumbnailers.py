@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import numpy
 import PIL.Image
 import gtk
 
-from file_utils import choose_representatives
+from . import icons
+from .file_utils import choose_representatives
 
 def open_image(file_name):
     try:
@@ -55,6 +57,10 @@ def build_directory_thumbnail(dir_path, size, orig_size=None):
     scale_factor = (float(size[0])/tx if thumbnail_aspect > 1.0
                     else float(size[1])/ty)
     images = choose_representatives(dir_path)
+    if len(images) == 0:
+        dir_name = os.path.split(dir_path)[-1]
+        return icons.generate_text_icon(dir_name, size, cache=True)
+
     layouts = \
       [[],
        [((0, 0), (100, 100))],

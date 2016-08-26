@@ -17,8 +17,8 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 
-from base_tab import BaseTab
-from image_browser import ImageBrowser
+from .base_tab import BaseTab
+from .image_browser import ImageBrowser
 
 class BrowserTab(BaseTab):
     def __init__(self, directory_path):

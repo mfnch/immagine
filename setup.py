@@ -18,8 +18,8 @@ import os
 from distutils.core import setup
 
 setup(name='immagine',
-      version='0.1',
-      description='Image viewer',
+      version='0.2',
+      description='Image viewer and browser with directory thumbnails',
       author='Matteo Franchin',
       author_email='fnch@users.sf.net',
       license='Apache License, Version 2.0',

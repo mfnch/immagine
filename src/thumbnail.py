@@ -15,7 +15,7 @@
 import os
 import math
 
-from thumbnailers import open_image
+from .thumbnailers import open_image
 
 class ThumbnailBase(object):
     def __init__(self, directory_name, file_name):

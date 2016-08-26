@@ -15,8 +15,8 @@
 import os
 import itertools
 
-from file_utils import get_files_in_dir
-from thumbnail import ImageThumbnail, DirectoryThumbnail
+from .file_utils import get_files_in_dir
+from .thumbnail import ImageThumbnail, DirectoryThumbnail
 
 class ImageAlbumRow(object):
     def __init__(self, max_width, image=None):

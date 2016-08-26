@@ -26,8 +26,8 @@ from multiprocessing import Process, Queue
 from collections import namedtuple
 from Queue import Empty
 
-from backcaller import BackCaller
-from thumbnailers import build_image_thumbnail, build_directory_thumbnail
+from .backcaller import BackCaller
+from .thumbnailers import build_image_thumbnail, build_directory_thumbnail
 
 def comment(s): pass
 

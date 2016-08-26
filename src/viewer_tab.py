@@ -16,7 +16,7 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 
-from base_tab import BaseTab
+from .base_tab import BaseTab
 
 class ViewerTab(BaseTab):
     def __init__(self, image_path):

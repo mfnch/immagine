@@ -17,14 +17,15 @@
 '''Simple image viewer.'''
 
 import os
+import sys
 import pygtk
 pygtk.require('2.0')
 import gobject
 import gtk
 
-from browser_tab import BrowserTab
-from viewer_tab import ViewerTab
-import file_utils
+from .browser_tab import BrowserTab
+from .viewer_tab import ViewerTab
+from . import file_utils
 
 def create_action_tuple(name=None, stock_id=None, label=None, accel=None,
                         tooltip=None, fn=None):
@@ -265,7 +266,8 @@ class ApplicationMainWindow(gtk.Window):
         pass
 
 
-def main(args):
+def main(args=None):
+    args = args or sys.argv
     start_path = (args[1] if len(args) >= 2 else None)
     gtk.gdk.threads_init()
     gtk.gdk.threads_enter()
@@ -274,5 +276,4 @@ def main(args):
     gtk.gdk.threads_leave()
 
 if __name__ == '__main__':
-    import sys
-    main(sys.argv)
+    main()
