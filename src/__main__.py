@@ -96,7 +96,6 @@ class ApplicationMainWindow(gtk.Window):
         vbox.pack_start(nb)
         self.add(self.window_content)
 
-        self.connect('window_state_event', self.on_window_state_event)
         self.show_all()
 
     def change_layout(self):
@@ -262,9 +261,6 @@ class ApplicationMainWindow(gtk.Window):
             n = self.notebook.page_num(viewer)
             self.notebook.remove_page(n)
             self.on_tab_changed()
-
-    def on_window_state_event(self, widget, event):
-        pass
 
     def on_open_location(self, *action):
         if self.open_dialog is None:
