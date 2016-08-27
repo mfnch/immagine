@@ -42,7 +42,7 @@ class ApplicationMainWindow(gtk.Window):
 
     def __init__(self, start_path, parent=None):
         super(ApplicationMainWindow, self).__init__()
-        self.fullscreen_mode = False
+        self.fullscreen_widget = None
         self.open_dialog = None
 
         try:
@@ -91,13 +91,48 @@ class ApplicationMainWindow(gtk.Window):
             self.open_tab(start_file)
 
         # Place menu and notebook in a VBox. Add this to the window.
-        vbox = gtk.VBox()
+        self.window_content = vbox = gtk.VBox()
         vbox.pack_start(bar, expand=False)
         vbox.pack_start(nb)
-        self.add(vbox)
+        self.add(self.window_content)
 
         self.connect('window_state_event', self.on_window_state_event)
         self.show_all()
+
+    def change_layout(self):
+        '''Switch in/out of fullscreen layout.'''
+        nb = self.notebook
+        if not self.get_fullscreen_mode():
+            # Go to fullscreen mode.
+            # Remove the widget (to be fullscreen-ed) from its parent tab.
+            n = nb.get_current_page()
+            tab = nb.get_nth_page(n)
+            _, tab_content = tab.get_children()
+            tab.remove(tab_content)
+
+            # Remember the parent widget so that we can restore the tab when
+            # going out of fullscreen mode.
+            self.fullscreen_widget = tab
+
+            # Remove the main window widget and replace it with the tab widget.
+            self.remove(self.window_content)
+            self.add(tab_content)
+        else:
+            # Quit fullscreen mode.
+            # Remove the tab widget from the window and replace it with the
+            # default widget.
+            tab_content = self.get_children()[0]
+            self.remove(tab_content)
+            self.add(self.window_content)
+
+            # Put back the tab widget to its original parent.
+            self.fullscreen_widget.pack_start(tab_content)
+            self.fullscreen_widget = None
+
+        fs = self.get_fullscreen_mode()
+        for page in range(nb.get_n_pages()):
+            tab = nb.get_nth_page(page)
+            tab.set_fullscreen(fs)
 
     def __create_action_group(self):
         ui_info = \
@@ -185,6 +220,13 @@ class ApplicationMainWindow(gtk.Window):
         self.notebook.append_page(vt, tab_label=vt.tab_top)
         self.notebook.set_tab_reorderable(vt, True)
         self.notebook.set_current_page(-1)
+        self.on_tab_changed()
+
+    def on_tab_changed(self):
+        '''Called when the current tab changes.'''
+        if self.get_fullscreen_mode():
+            self.change_layout()
+            self.change_layout()
 
     def about_action(self, action):
         dialog = gtk.AboutDialog()
@@ -196,17 +238,17 @@ class ApplicationMainWindow(gtk.Window):
 
     def close_tab_action(self, action):
         n = self.notebook.get_current_page()
-        if isinstance(self.notebook.get_nth_page(n), ViewerTab):
-            self.notebook.remove_page(n)
+        self.on_close_tab(self.notebook.get_nth_page(n))
 
     def get_fullscreen_mode(self):
-        return self.fullscreen_mode
+        return (self.fullscreen_widget is not None)
 
     def fullscreen_action(self, action):
-        if self.fullscreen_mode:
-            self.unfullscreen()
-        else:
+        self.change_layout()
+        if self.get_fullscreen_mode():
             self.fullscreen()
+        else:
+            self.unfullscreen()
 
     def on_directory_changed(self, new_directory):
         self.set_title(new_directory + ' - ' + self.application_name)
@@ -219,15 +261,10 @@ class ApplicationMainWindow(gtk.Window):
         if isinstance(viewer, ViewerTab):
             n = self.notebook.page_num(viewer)
             self.notebook.remove_page(n)
+            self.on_tab_changed()
 
     def on_window_state_event(self, widget, event):
-        mask = gtk.gdk.WINDOW_STATE_MAXIMIZED | gtk.gdk.WINDOW_STATE_FULLSCREEN
-        self.fullscreen_mode = fs = \
-          (event.new_window_state & gtk.gdk.WINDOW_STATE_FULLSCREEN) != 0
-        nb = self.notebook
-        for page in range(nb.get_n_pages()):
-            tab = nb.get_nth_page(page)
-            tab.set_fullscreen(fs)
+        pass
 
     def on_open_location(self, *action):
         if self.open_dialog is None:
