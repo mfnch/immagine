@@ -1,7 +1,8 @@
 ========
 immagine
 ========
-Image viewer with directory thumbnails and a focus on the browsing experience
+Image viewer for Linux with directory thumbnails and a focus on the browsing
+experience
 
 Status
 ======
