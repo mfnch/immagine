@@ -86,3 +86,6 @@ class BaseTab(BackCaller, gtk.VBox):
 
     def fullscreen(self, action):
         self.call('toggle_fullscreen', action)
+
+    def on_key_press_event(self, event):
+        '''Handle key press events directed to this tab.'''

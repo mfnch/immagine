@@ -58,13 +58,33 @@ class ViewerTab(BaseTab):
             self.size = (allocation.width, allocation.height)
             self.zoom_fit(None)
 
-    def close_tab(self, action):
+    def on_key_press_event(self, event):
+        name = gtk.gdk.keyval_name(event.keyval).lower()
+        if event.state & gtk.gdk.CONTROL_MASK:
+            if name == 'minus':
+                self.zoom_out()
+                return True
+            elif name == 'plus':
+                self.zoom_in()
+                return True
+            elif name == '0':
+                self.zoom_fit()
+                return True
+            elif name == '9':
+                self.zoom_100()
+                return True
+        if name == 'escape':
+            self.close_tab()
+            return True
+        return False
+
+    def close_tab(self, action=None):
         self.call('close_tab', self)
 
-    def zoom_in(self, action):
+    def zoom_in(self, action=None):
         self.zoom_by_factor(self.zoom_increment)
 
-    def zoom_out(self, action):
+    def zoom_out(self, action=None):
         self.zoom_by_factor(1.0 / self.zoom_increment)
 
     def zoom_by_factor(self, factor):
@@ -100,7 +120,7 @@ class ViewerTab(BaseTab):
         self.image.clear()
         self.image.set_from_pixbuf(pixbuf)
 
-    def zoom_fit(self, action):
+    def zoom_fit(self, action=None):
         rect = self.scrolled_window.get_allocation()
         if rect.x < 0 or rect.y < 0 or rect.width < 1 or rect.height < 1:
             return
@@ -109,7 +129,7 @@ class ViewerTab(BaseTab):
         # in the scrolled window.
         self.zoom_to_size(rect.width - 2, rect.height - 2)
 
-    def zoom_100(self, action):
+    def zoom_100(self, action=None):
         pixbuf = gtk.gdk.pixbuf_new_from_file(self.image_path)
         self.image.clear()
         self.image.set_from_pixbuf(pixbuf)

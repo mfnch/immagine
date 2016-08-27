@@ -19,7 +19,7 @@ import os
 image_file_extensions = ('.jpeg', '.jpg', '.png', '.tif', '.xpm')
 
 def default_file_sorter(isdir_path1, isdir_path2):
-    '''Directory come first, then picture created first come first.'''
+    '''Directory come first, then picture created first comes first.'''
 
     if isdir_path1[0] != isdir_path2[0]:
         return (-1 if isdir_path1[0] else 1)

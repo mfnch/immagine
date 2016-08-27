@@ -70,13 +70,30 @@ class BrowserTab(BaseTab):
     def on_open(self, action):
         self.call('open_location')
 
-    def go_up(self, action):
+    def on_key_press_event(self, event):
+        name = gtk.gdk.keyval_name(event.keyval).lower()
+        if event.state & gtk.gdk.CONTROL_MASK:
+            if name == 'up':
+                self.go_up()
+                return True
+            elif name == 'left':
+                self.go_back()
+                return True
+            elif name == 'right':
+                self.go_forward()
+                return True
+        if name == 'escape':
+            self.go_back()
+            return True
+        return False
+
+    def go_up(self, action=None):
         self.image_browser.go_to_parent_directory()
 
-    def go_back(self, action):
+    def go_back(self, action=None):
         self.image_browser.go_to_previous_directory()
 
-    def go_forward(self, action):
+    def go_forward(self, action=None):
         self.image_browser.go_to_next_directory()
 
     def go_to_directory(self, directory):

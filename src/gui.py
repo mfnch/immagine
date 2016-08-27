@@ -96,6 +96,11 @@ class ApplicationMainWindow(gtk.Window):
         vbox.pack_start(nb)
         self.add(self.window_content)
 
+        # Allow the window to get events.
+        mask = gtk.gdk.KEY_PRESS_MASK
+        self.add_events(mask)
+        self.connect('key-press-event', self.on_key_press_event)
+
         self.show_all()
 
     def change_layout(self):
@@ -132,6 +137,14 @@ class ApplicationMainWindow(gtk.Window):
         for page in range(nb.get_n_pages()):
             tab = nb.get_nth_page(page)
             tab.set_fullscreen(fs)
+
+    def get_current_tab(self):
+        '''Return the active tab. This is either a BrowserTab or a ViewerTab.
+        '''
+        if self.fullscreen_widget is not None:
+            return self.fullscreen_widget
+        n = self.notebook.get_current_page()
+        return self.notebook.get_nth_page(n)
 
     def __create_action_group(self):
         ui_info = \
@@ -188,12 +201,14 @@ class ApplicationMainWindow(gtk.Window):
         gtk.main_quit()
 
     def open_tab(self, path):
+        '''Create a new tab for the given file/directory path.'''
         if os.path.isdir(path):
             return self.open_browser_tab(path)
         else:
             return self.open_viewer_tab(path)
 
     def open_browser_tab(self, path):
+        '''Create a new BrowserTab to browser the given directory path.'''
         if not os.path.isdir(path):
             return None
 
@@ -211,6 +226,7 @@ class ApplicationMainWindow(gtk.Window):
         return bt
 
     def open_viewer_tab(self, path):
+        '''Create a new ViewerTab to view the image at the given path.'''
         vt = ViewerTab(path)
         vt.set_callback('close_tab', self.on_close_tab)
         vt.set_callback('toggle_fullscreen', self.fullscreen_action)
@@ -248,6 +264,10 @@ class ApplicationMainWindow(gtk.Window):
             self.fullscreen()
         else:
             self.unfullscreen()
+
+    def on_key_press_event(self, main_window, event):
+        tab = self.get_current_tab()
+        return tab.on_key_press_event(event)
 
     def on_directory_changed(self, new_directory):
         self.set_title(new_directory + ' - ' + self.application_name)
