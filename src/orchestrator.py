@@ -215,8 +215,7 @@ class Orchestrator(BackCaller):
                 all_tns.sort(lambda a, b: cmp(b[1], a[1]))
                 for file_name_to_remove, _ in \
                   all_tns[self.thumbnail_soft_limit:]:
-                    comment('Removing {}'.format(file_name_to_remove))
-                    print('Remove {}'.format(file_name_to_remove))
+                    comment('Rm thumb {}'.format(file_name_to_remove))
                     self.thumbnails.pop(file_name_to_remove)
 
         # Create or replace the thumbnail.
