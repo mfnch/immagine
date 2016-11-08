@@ -225,9 +225,9 @@ class ApplicationMainWindow(gtk.Window):
         self.notebook.set_current_page(-1)
         return bt
 
-    def open_viewer_tab(self, path):
+    def open_viewer_tab(self, path, **kwargs):
         '''Create a new ViewerTab to view the image at the given path.'''
-        vt = ViewerTab(path)
+        vt = ViewerTab(path, **kwargs)
         vt.set_callback('close_tab', self.on_close_tab)
         vt.set_callback('toggle_fullscreen', self.fullscreen_action)
         vt.show_all()
@@ -272,9 +272,11 @@ class ApplicationMainWindow(gtk.Window):
     def on_directory_changed(self, new_directory):
         self.set_title(new_directory + ' - ' + self.application_name)
 
-    def on_image_clicked(self, image_path):
-        if not os.path.isdir(image_path):
-            self.open_viewer_tab(image_path)
+    def on_image_clicked(self, file_list, file_item):
+        if not file_item.is_dir:
+            self.open_viewer_tab(file_item.full_path,
+                                 file_list=file_list,
+                                 file_index=file_item.index)
 
     def on_close_tab(self, viewer):
         if isinstance(viewer, ViewerTab):

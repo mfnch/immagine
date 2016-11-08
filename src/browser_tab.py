@@ -64,8 +64,8 @@ class BrowserTab(BaseTab):
         self.toolbutton_go_forward.set_sensitive(ib.has_next_directory())
         self.call('directory_changed', new_directory)
 
-    def on_image_clicked(self, new_path):
-        self.call('image_clicked', new_path)
+    def on_image_clicked(self, *args):
+        self.call('image_clicked', *args)
 
     def on_open(self, action):
         self.call('open_location')

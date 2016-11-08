@@ -19,7 +19,7 @@ import gtk
 from .base_tab import BaseTab
 
 class ViewerTab(BaseTab):
-    def __init__(self, image_path):
+    def __init__(self, image_path, file_list=None, file_index=None):
         toolbar_desc = \
          ((gtk.STOCK_ZOOM_IN, 'Zoom in', 'zoom_in'),
           (gtk.STOCK_ZOOM_FIT, 'Zoom to fit', 'zoom_fit'),
@@ -32,7 +32,8 @@ class ViewerTab(BaseTab):
                                         label_ellipsize_end=True,
                                         toggle_fullscreen=None,
                                         close_tab=None)
-
+        self.file_list = file_list
+        self.file_index = file_index
         self.max_zoom = 4.0        # Maximum zoom factor.
         self.min_zoom = 0.02       # Minimum zoom factor.
         self.zoom_increment = 1.5  # Zoom magnification when doing a "zoom in".
@@ -59,24 +60,27 @@ class ViewerTab(BaseTab):
             self.zoom_fit(None)
 
     def on_key_press_event(self, event):
-        name = gtk.gdk.keyval_name(event.keyval).lower()
+        name = ''
         if event.state & gtk.gdk.CONTROL_MASK:
-            if name == 'minus':
-                self.zoom_out()
-                return True
-            elif name == 'plus':
-                self.zoom_in()
-                return True
-            elif name == '0':
-                self.zoom_fit()
-                return True
-            elif name == '9':
-                self.zoom_100()
-                return True
-        if name == 'escape':
+            name += 'ctrl+'
+        name += gtk.gdk.keyval_name(event.keyval).lower()
+        if name in ('ctrl+minus', 'up'):
+            self.zoom_out()
+        elif name in ('ctrl+plus', 'down'):
+            self.zoom_in()
+        elif name in ('ctrl+0', 'right'):
+            self.zoom_fit()
+        elif name in ('ctrl+9', 'left'):
+            self.zoom_100()
+        elif name == 'page_up':
+            self.change_picture(-1)
+        elif name == 'page_down':
+            self.change_picture(1)
+        elif name == 'escape':
             self.close_tab()
-            return True
-        return False
+        else:
+            return False
+        return True
 
     def close_tab(self, action=None):
         self.call('close_tab', self)
@@ -133,3 +137,11 @@ class ViewerTab(BaseTab):
         pixbuf = gtk.gdk.pixbuf_new_from_file(self.image_path)
         self.image.clear()
         self.image.set_from_pixbuf(pixbuf)
+
+    def change_picture(self, delta_index):
+        idx = self.file_index + delta_index
+        if idx < 0 or idx >= len(self.file_list):
+            return False
+        self.image_path = self.file_list[idx].full_path
+        self.file_index = idx
+        self.zoom_fit()

@@ -38,6 +38,12 @@ class FileList(object):
     def __iter__(self):
         return iter(self.file_items)
 
+    def __len__(self):
+        return len(self.file_items)
+
+    def __getitem__(self, idx):
+        return self.file_items[idx]
+
     def set_from_directory(dir_path):
         pass
 

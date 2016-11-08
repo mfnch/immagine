@@ -39,6 +39,7 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
                  hadjustment=None, vadjustment=None):
         # Directory this object is browsing.
         self.location = Location(start_dir)
+        self.file_list = None
         self.album = None
         self.previous_locations = []
         self.next_locations = []
@@ -102,7 +103,7 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
 
     def lay_out_album(self):
         new_width, _ = self.window.get_size()
-        file_list = FileList(self.location.path)
+        self.file_list = file_list = FileList(self.location.path)
         self.album = layout.ImageAlbum(file_list, max_width=new_width)
 
     def scroll_adjustment(self, hadjustment, vadjustment):
@@ -237,7 +238,7 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         if thumbnail is None:
             return
         file_item = thumbnail.get_file_item()
-        self.call('image_clicked', file_item.full_path)
+        self.call('image_clicked', self.file_list, file_item)
         if file_item.is_dir:
             self.previous_locations.append(self.location)
             self.next_locations = []
