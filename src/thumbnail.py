@@ -18,28 +18,20 @@ import math
 from .thumbnailers import open_image
 
 class ThumbnailBase(object):
-    def __init__(self, directory_name, file_name):
+    def __init__(self, file_list_item):
         self.pos = None
         self.orig_size = None
         self.size = None
-        self.directory_name = directory_name
-        self.file_name = file_name
+        self.file_list_item = file_list_item
         self.damaged = False
+
+    def get_file_item(self):
+        return self.file_list_item
 
     def contains(self, pos):
         '''Whether the given pixel is contained inside this thumbnail.'''
         return (self.pos[0] <= pos[0] < self.pos[0] + self.size[0] and
                 self.pos[1] <= pos[1] < self.pos[1] + self.size[1])
-
-    def is_dir(self):
-        '''Whether this is a directory thumbnail.'''
-        return self.file_name is None
-
-    def get_full_path(self):
-        '''Get the full path of the thumbnail.'''
-        if self.file_name is None:
-            return self.directory_name
-        return os.path.join(self.directory_name, self.file_name)
 
     def compute_size(self, max_size):
         assert self.orig_size is not None
@@ -59,12 +51,11 @@ class ThumbnailBase(object):
         self.size = (int(round(new_width)), int(round(new_height)))
 
 class ImageThumbnail(ThumbnailBase):
-    def __init__(self, directory_name, file_name=None):
-        super(ImageThumbnail, self).__init__(directory_name, file_name)
+    def __init__(self, file_list_item):
+        super(ImageThumbnail, self).__init__(file_list_item)
 
     def obtain_image_info(self):
-        full_file_name = os.path.join(self.directory_name, self.file_name)
-        image = open_image(full_file_name)
+        image = open_image(self.file_list_item.full_path)
         if image is not None:
             orig_size = image.size
             del image
@@ -87,8 +78,8 @@ class DirectoryThumbnail(ThumbnailBase):
        accessed. This helps greatly to improve rendering speeds.
     4. In order to create the thumbnail we both scale and cut the pictures.
     '''
-    def __init__(self, directory_name):
-        super(DirectoryThumbnail, self).__init__(directory_name, None)
+    def __init__(self, file_list_item):
+        super(DirectoryThumbnail, self).__init__(file_list_item)
 
     def obtain_image_info(self):
         self.orig_size = (100, 100)

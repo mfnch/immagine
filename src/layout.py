@@ -83,14 +83,15 @@ class ImageAlbumRow(object):
         for i, image in enumerate(self.images):
             image.pos = (x + width, y)
             height = max(height, image.size[1])
-            width += image.size[0] + (self.borders[i] if i < len(self.borders) else 0)
+            width += image.size[0] + (self.borders[i] if i < len(self.borders)
+                                      else 0)
         self.size = (width, height)
 
 class ImageAlbum(object):
-    def __init__(self, directory, max_width=1200, border=(5, 5)):
+    def __init__(self, file_list, max_width=1200, border=(5, 5)):
         self.rows = []
         self.border = border
-        for row in lay_out_images(directory,
+        for row in lay_out_images(file_list,
                                   max_width=max_width,
                                   border=border[0]):
             self.add(row)
@@ -171,22 +172,18 @@ class ImageAlbum(object):
                     images.append(image)
         return images
 
-def lay_out_images(directory_path,
-                   border=2, max_width=1200, max_size=(400, 150),
-                   **kwargs):
+def lay_out_images(file_list, border=2, max_width=1200, max_size=(400, 150)):
     subdirs = []
     images = []
 
     # Find all images and subdirectories that we will have to display.
-    full_path = os.path.realpath(directory_path)
-    for isdir, name in get_files_in_dir(full_path, **kwargs):
+    for file_item in file_list:
         # Deal with directories separately.
-        if isdir:
-            subdirs.append(DirectoryThumbnail(name))
+        if file_item.is_dir:
+            subdirs.append(DirectoryThumbnail(file_item))
         else:
             # Filter files by extension.
-            relative_name = os.path.split(name)[1]
-            images.append(ImageThumbnail(full_path, relative_name))
+            images.append(ImageThumbnail(file_item))
 
     # Create the image layout, row by row.
     row = ImageAlbumRow(max_width)

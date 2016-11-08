@@ -23,11 +23,14 @@ from . import icons
 from .thumbnailers import build_empty_thumbnail
 from .orchestrator import Orchestrator, THUMBNAIL_DONE
 from .backcaller import BackCaller
+from .file_utils import FileList
+
 
 class Location(object):
     def __init__(self, full_path, y_pos=0):
         self.path = os.path.realpath(full_path)
         self.y = y_pos
+
 
 class ImageBrowser(gtk.DrawingArea, BackCaller):
     set_scroll_adjustment_signal_id = None
@@ -99,7 +102,8 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
 
     def lay_out_album(self):
         new_width, _ = self.window.get_size()
-        self.album = layout.ImageAlbum(self.location.path, max_width=new_width)
+        file_list = FileList(self.location.path)
+        self.album = layout.ImageAlbum(file_list, max_width=new_width)
 
     def scroll_adjustment(self, hadjustment, vadjustment):
         self._hadjustment = hadjustment
@@ -175,13 +179,13 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         object.
         '''
 
-        full_path = thumbnail.get_full_path()
-        tn = self.orchestrator.request_thumbnail(full_path, thumbnail.size)
+        file_item = thumbnail.get_file_item()
+        tn = self.orchestrator.request_thumbnail(file_item.full_path,
+                                                 thumbnail.size)
         if tn.state is THUMBNAIL_DONE:
             return \
               gtk.gdk.pixbuf_new_from_array(tn.data, gtk.gdk.COLORSPACE_RGB, 8)
-        file_name = os.path.split(full_path)[1]
-        return icons.generate_text_icon('Loading...\n' + file_name,
+        return icons.generate_text_icon('Loading...\n' + file_item.name,
                                         thumbnail.size,
                                         cache=True,
                                         out_format=icons.FORMAT_PIXBUF)
@@ -230,12 +234,14 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         x, y = event.get_coords()
         y += self._get_y_location()
         thumbnail = self.album.find_thumbnail_at_pos((x, y))
-        if thumbnail is not None:
-            self.call('image_clicked', thumbnail.get_full_path())
-        if thumbnail is not None and thumbnail.is_dir():
+        if thumbnail is None:
+            return
+        file_item = thumbnail.get_file_item()
+        self.call('image_clicked', file_item.full_path)
+        if file_item.is_dir:
             self.previous_locations.append(self.location)
             self.next_locations = []
-            self._change_directory(Location(thumbnail.get_full_path()))
+            self._change_directory(Location(file_item.full_path))
 
     def on_query_tooltip(self, widget, x, y, keyboard_tip, tooltip):
         '''Called before rendering the tooltip.'''
@@ -245,14 +251,14 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         if thumbnail is None:
             return False
 
-        full_path = thumbnail.get_full_path()
+        file_item = thumbnail.get_file_item()
         if (self.last_tooltip_shown is not None and
-            self.last_tooltip_shown != full_path):
+            self.last_tooltip_shown != file_item.full_path):
             self.last_tooltip_shown = None
             return False
 
-        self.last_tooltip_shown = full_path
-        tooltip.set_text(os.path.split(full_path)[1])
+        self.last_tooltip_shown = file_item.full_path
+        tooltip.set_text(file_item.name)
         return True
 
     def has_next_directory(self):

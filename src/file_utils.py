@@ -16,6 +16,35 @@
 
 import os
 
+
+class FileListItem(object):
+    def __init__(self, index, is_dir, dir_path, name):
+        self.index = index
+        self.is_dir = is_dir
+        self.dir_path = dir_path
+        self.name = name
+        self.full_path = os.path.join(dir_path, name)
+
+class FileList(object):
+    def __init__(self, dir_path, **kwargs):
+        self.callbacks = []
+        self.full_path = dir_path = os.path.realpath(dir_path)
+        self.file_items = items = []
+        for i, args in enumerate(get_files_in_dir(dir_path, **kwargs)):
+            is_dir, name = args
+            item = FileListItem(i, is_dir, dir_path, name)
+            items.append(item)
+
+    def __iter__(self):
+        return iter(self.file_items)
+
+    def set_from_directory(dir_path):
+        pass
+
+    def register_callback(self, update_callback):
+        self.callbacks.append(update_callback)
+
+
 image_file_extensions = ('.jpeg', '.jpg', '.png', '.tif', '.xpm')
 
 def default_file_sorter(isdir_path1, isdir_path2):
