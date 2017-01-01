@@ -26,6 +26,10 @@ class ViewerTab(BaseTab):
           (gtk.STOCK_ZOOM_OUT, 'Zoom out', 'zoom_out'),
           (gtk.STOCK_ZOOM_100, 'Zoom to 100%', 'zoom_100'),
           (),
+          (gtk.STOCK_MEDIA_PREVIOUS, 'Previous picture', 'change_previous'),
+          (gtk.STOCK_MEDIA_NEXT, 'Next picture', 'change_next'),
+          (gtk.STOCK_CLOSE, 'Close tab', 'close_tab'),
+          (),
           (gtk.STOCK_FULLSCREEN, 'Enter full-screen mode', 'fullscreen'))
         super(ViewerTab, self).__init__(image_path, toolbar_desc,
                                         with_close_button=True,
@@ -73,9 +77,9 @@ class ViewerTab(BaseTab):
         elif name in ('ctrl+9', 'left'):
             self.zoom_100()
         elif name == 'page_up':
-            self.change_picture(-1)
+            self.change_previous()
         elif name == 'page_down':
-            self.change_picture(1)
+            self.change_next()
         elif name == 'escape':
             self.close_tab()
         else:
@@ -145,3 +149,9 @@ class ViewerTab(BaseTab):
         self.image_path = self.file_list[idx].full_path
         self.file_index = idx
         self.zoom_fit()
+
+    def change_previous(self, *ignore):
+        self.change_picture(-1)
+
+    def change_next(self, *ignore):
+        self.change_picture(1)

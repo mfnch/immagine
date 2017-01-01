@@ -25,6 +25,7 @@ import gtk
 
 from .browser_tab import BrowserTab
 from .viewer_tab import ViewerTab
+from .toolbar_window import ToolbarWindow
 from . import file_utils
 
 def create_action_tuple(name=None, stock_id=None, label=None, accel=None,
@@ -43,6 +44,7 @@ class ApplicationMainWindow(gtk.Window):
     def __init__(self, start_path, parent=None):
         super(ApplicationMainWindow, self).__init__()
         self.fullscreen_widget = None
+        self.fullscreen_toolbar = ToolbarWindow()
         self.open_dialog = None
 
         try:
@@ -97,9 +99,10 @@ class ApplicationMainWindow(gtk.Window):
         self.add(self.window_content)
 
         # Allow the window to get events.
-        mask = gtk.gdk.KEY_PRESS_MASK
+        mask = gtk.gdk.KEY_PRESS_MASK | gtk.gdk.POINTER_MOTION_MASK
         self.add_events(mask)
         self.connect('key-press-event', self.on_key_press_event)
+        self.connect("motion_notify_event", self.on_motion_notify_event)
 
         self.show_all()
 
@@ -111,12 +114,14 @@ class ApplicationMainWindow(gtk.Window):
             # Remove the widget (to be fullscreen-ed) from its parent tab.
             n = nb.get_current_page()
             tab = nb.get_nth_page(n)
-            _, tab_content = tab.get_children()
+            toolbar, tab_content = tab.get_children()
+            tab.remove(toolbar)
             tab.remove(tab_content)
 
             # Remember the parent widget so that we can restore the tab when
             # going out of fullscreen mode.
             self.fullscreen_widget = tab
+            self.fullscreen_toolbar.begin(toolbar)
 
             # Remove the main window widget and replace it with the tab widget.
             self.remove(self.window_content)
@@ -130,6 +135,8 @@ class ApplicationMainWindow(gtk.Window):
             self.add(self.window_content)
 
             # Put back the tab widget to its original parent.
+            toolbar = self.fullscreen_toolbar.end()
+            self.fullscreen_widget.pack_start(toolbar, expand=False)
             self.fullscreen_widget.pack_start(tab_content)
             self.fullscreen_widget = None
 
@@ -137,6 +144,10 @@ class ApplicationMainWindow(gtk.Window):
         for page in range(nb.get_n_pages()):
             tab = nb.get_nth_page(page)
             tab.set_fullscreen(fs)
+
+    def on_motion_notify_event(self, widget, event):
+        if self.get_fullscreen_mode():
+            self.fullscreen_toolbar.show_if_mouse_nearby()
 
     def get_current_tab(self):
         '''Return the active tab. This is either a BrowserTab or a ViewerTab.

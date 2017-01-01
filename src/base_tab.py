@@ -63,6 +63,7 @@ class BaseTab(BackCaller, gtk.VBox):
 
         self.toolbar = tb = gtk.Toolbar()
         tb.set_style(gtk.TOOLBAR_ICONS)
+        tb.set_show_arrow(False)
         tb.set_tooltips(True)
         for item in toolbar_desc:
             if len(item) == 3:
