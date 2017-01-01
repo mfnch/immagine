@@ -15,7 +15,7 @@
 # limitations under the License.
 
 import os
-from distutils.core import setup
+from setuptools import setup
 
 script_path = os.path.abspath(os.path.dirname(__file__))
 readme_path = os.path.join(script_path, 'README.rst')
@@ -31,7 +31,9 @@ setup(name='immagine',
       license='Apache License, Version 2.0',
       url='https://github.com/mfnch/immagine',
       keywords=['image viewer', 'image browser', 'thumbnail'],
-      classifiers=['Development Status :: 3 - Alpha',
+      classifiers=['Programming Language :: Python :: 2',
+                   'Programming Language :: Python :: 2.7',
+                   'Development Status :: 3 - Alpha',
                    'Topic :: Multimedia :: Graphics :: Viewers',
                    'License :: OSI Approved :: Apache Software License'],
       package_dir={'immagine': 'src'},
