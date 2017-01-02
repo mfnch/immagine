@@ -33,10 +33,17 @@ class Location(object):
 
 
 class ImageBrowser(gtk.DrawingArea, BackCaller):
-    set_scroll_adjustment_signal_id = None
+    __gsignals__ = \
+      {'set-scroll-adjustment': (gobject.SIGNAL_RUN_LAST,
+                                 gobject.TYPE_NONE,
+                                 (gtk.Adjustment, gtk.Adjustment))}
 
-    def __init__(self, start_dir,
-                 hadjustment=None, vadjustment=None):
+    def __init__(self, start_dir, hadjustment=None, vadjustment=None):
+        BackCaller.__init__(self,
+                            directory_changed=None,
+                            image_clicked=None)
+        gtk.DrawingArea.__init__(self)
+
         # Directory this object is browsing.
         self.location = Location(start_dir)
         self.file_list = None
@@ -58,21 +65,7 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
                                        self.on_thumbnail_available)
 
         self.last_tooltip_shown = None
-
-        BackCaller.__init__(self,
-                            directory_changed=None,
-                            image_clicked=None)
-        gtk.DrawingArea.__init__(self)
-
         self.props.has_tooltip = True
-
-        if ImageBrowser.set_scroll_adjustment_signal_id is None:
-            ImageBrowser.set_scroll_adjustment_signal_id = \
-                gobject.signal_new('set-scroll-adjustment', self.__class__,
-                                   gobject.SIGNAL_RUN_LAST,
-                                   gobject.TYPE_NONE,
-                                   (gtk.Adjustment, gtk.Adjustment))
-        self.set_set_scroll_adjustments_signal('set-scroll-adjustment')
 
         # Allow the object to receive scroll events and other events.
         mask = (gtk.gdk.POINTER_MOTION_MASK |
@@ -322,3 +315,5 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         self._update_scrollbars()
         self.call('directory_changed', location.path)
         self.queue_draw()
+
+ImageBrowser.set_set_scroll_adjustments_signal('set-scroll-adjustment')
