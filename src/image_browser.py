@@ -13,12 +13,12 @@
 # limitations under the License.
 
 import os
-import pygtk
-pygtk.require('2.0')
+
 import gobject
 import gtk
-import layout
+import gtk.gdk
 
+from . import layout
 from . import icons
 from .thumbnailers import build_empty_thumbnail
 from .orchestrator import Orchestrator, THUMBNAIL_DONE
@@ -101,10 +101,11 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
     hadjustment = property(_get_hadjustment, _set_hadjustment)
     vadjustment = property(_get_vadjustment, _set_vadjustment)
 
-    def lay_out_album(self):
-        new_width, _ = self.window.get_size()
+    def lay_out_album(self, width=None):
+        if width is None:
+            width = self.window.get_size()
         self.file_list = file_list = FileList(self.location.path)
-        self.album = layout.ImageAlbum(file_list, max_width=new_width)
+        self.album = layout.ImageAlbum(file_list, max_width=width)
 
     def scroll_adjustment(self, hadjustment, vadjustment):
         self._hadjustment = hadjustment
@@ -225,9 +226,7 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
 
     def on_size_change(self, myself, event):
         '''Called when the size of the object changes.'''
-
-        new_width, new_height = self.window.get_size()
-        self.lay_out_album()
+        self.lay_out_album(event.width)
         self._update_scrollbars()
         self.orchestrator.clear_queue()
 

@@ -18,10 +18,11 @@
 
 import os
 import sys
+
 import pygtk
 pygtk.require('2.0')
-import gobject
 import gtk
+import gobject
 
 from .browser_tab import BrowserTab
 from .viewer_tab import ViewerTab

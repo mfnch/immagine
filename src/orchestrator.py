@@ -24,7 +24,10 @@ import os
 from threading import Thread
 from multiprocessing import Process, Queue
 from collections import namedtuple
-from Queue import Empty
+try:
+    from Queue import Empty
+except ImportError:
+    from queue import Empty
 
 from .backcaller import BackCaller
 from .thumbnailers import build_image_thumbnail, build_directory_thumbnail

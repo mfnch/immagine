@@ -13,8 +13,7 @@
 # limitations under the License.
 
 import os
-import pygtk
-pygtk.require('2.0')
+
 import gtk
 
 from .base_tab import BaseTab
