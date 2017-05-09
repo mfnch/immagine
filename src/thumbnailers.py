@@ -20,9 +20,12 @@ import gtk
 from . import icons
 from .file_utils import choose_representatives
 
-def open_image(file_name):
+def open_image(file_name, load=False):
     try:
-        return PIL.Image.open(file_name)
+        img = PIL.Image.open(file_name)
+        if load:
+            img.load()
+        return img
     except:
         return None
 
@@ -83,7 +86,7 @@ def build_directory_thumbnail(dir_path, size, orig_size=None):
         dpy = int(round(dest_pos[1]*scale_factor))
         dest_aspect = float(dest_size[0])/dest_size[1]
 
-        orig_image = open_image(image_path)
+        orig_image = open_image(image_path, load=True)
         if orig_image is None:
             # TODO: replace with a broken picture image.
             continue

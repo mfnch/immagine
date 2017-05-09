@@ -25,6 +25,10 @@ class FileListItem(object):
         self.name = name
         self.full_path = os.path.join(dir_path, name)
 
+    def is_hidden(self):
+        return os.path.split(self.name)[-1].startswith('.')
+
+
 class FileList(object):
     def __init__(self, dir_path, **kwargs):
         self.callbacks = []
@@ -33,7 +37,8 @@ class FileList(object):
         for i, args in enumerate(get_files_in_dir(dir_path, **kwargs)):
             is_dir, name = args
             item = FileListItem(i, is_dir, dir_path, name)
-            items.append(item)
+            if not item.is_hidden():
+                items.append(item)
 
     def __iter__(self):
         return iter(self.file_items)
@@ -51,7 +56,7 @@ class FileList(object):
         self.callbacks.append(update_callback)
 
 
-image_file_extensions = ('.jpeg', '.jpg', '.png', '.tif', '.xpm')
+image_file_extensions = ('.jpeg', '.jpg', '.png', '.tif', '.xpm', '.bmp')
 
 def default_file_sorter(isdir_path1, isdir_path2):
     '''Directory come first, then picture created first comes first.'''

@@ -96,7 +96,7 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
 
     def lay_out_album(self, width=None):
         if width is None:
-            width = self.window.get_size()
+            width, _ = self.window.get_size()
         self.file_list = file_list = FileList(self.location.path)
         self.album = layout.ImageAlbum(file_list, max_width=width)
 
