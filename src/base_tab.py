@@ -38,6 +38,7 @@ def add_close_button(label):
     hb.show_all()
     return (b, hb)
 
+
 class BaseTab(BackCaller, gtk.VBox):
     def __init__(self, path, toolbar_desc, tab_width_chars=25,
                  with_close_button=False, label_ellipsize_end=False,
@@ -46,14 +47,12 @@ class BaseTab(BackCaller, gtk.VBox):
         BackCaller.__init__(self, **kwargs)
         self.toolbutton_fullscreen = None
 
-        label = gtk.Label()
+        self.tab_label = label = gtk.Label()
         label.set_width_chars(tab_width_chars)
         label.set_ellipsize(pango.ELLIPSIZE_END if label_ellipsize_end
                             else pango.ELLIPSIZE_START)
-        label.set_tooltip_text(path)
-        label.set_text(os.path.split(path)[-1])
+        self.update_title(path)
 
-        self.tab_top = label
         if with_close_button:
             # Add a close button in the tab, close to the tab label.
             self.close_button, self.tab_top = add_close_button(label)
@@ -75,6 +74,11 @@ class BaseTab(BackCaller, gtk.VBox):
                 setattr(self, 'toolbutton_{}'.format(name), toolbutton)
             else:
                 tb.insert(gtk.SeparatorToolItem(), -1)
+
+    def update_title(self, path):
+        label = self.tab_label
+        label.set_tooltip_text(path)
+        label.set_text(os.path.split(path)[-1])
 
     def set_fullscreen(self, fs):
         tb = self.toolbutton_fullscreen

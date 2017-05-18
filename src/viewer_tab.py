@@ -146,6 +146,7 @@ class ViewerTab(BaseTab):
             return False
         self.image_path = self.file_list[idx].full_path
         self.file_index = idx
+        self.update_title(self.image_path)
         self.zoom_fit()
 
     def change_previous(self, *ignore):
