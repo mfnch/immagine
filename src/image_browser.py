@@ -111,7 +111,8 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
                    reversed_sort=cfg('reversed_sort', False),
                    sort_type=cfg('sort_type', FileList.SORT_BY_MOD_DATE))
 
-        self.album = layout.ImageAlbum(file_list, max_width=width)
+        self.album = layout.ImageAlbum(file_list, max_width=width,
+                                       max_size=cfg('thumb_size'))
 
     def scroll_adjustment(self, hadjustment, vadjustment):
         self._hadjustment = hadjustment

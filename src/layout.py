@@ -88,12 +88,11 @@ class ImageAlbumRow(object):
         self.size = (width, height)
 
 class ImageAlbum(object):
-    def __init__(self, file_list, max_width=1200, border=(5, 5)):
+    def __init__(self, file_list, max_width=1200, border=(5, 5), **kwargs):
         self.rows = []
         self.border = border
-        for row in lay_out_images(file_list,
-                                  max_width=max_width,
-                                  border=border[0]):
+        for row in lay_out_images(file_list, max_width=max_width,
+                                  border=border[0], **kwargs):
             self.add(row)
 
     def get_height(self):
@@ -172,11 +171,13 @@ class ImageAlbum(object):
                     images.append(image)
         return images
 
-def lay_out_images(file_list, border=2, max_width=1200, max_size=(400, 150)):
-    subdirs = []
-    images = []
+def lay_out_images(file_list, border=2, max_width=1200, max_size=None):
+    if max_size is None:
+        max_size = (400, 150)
 
     # Find all images and subdirectories that we will have to display.
+    subdirs = []
+    images = []
     for file_item in file_list:
         # Deal with directories separately.
         if file_item.is_dir:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2016 Matteo Franchin
+# Copyright 2016, 2017 Matteo Franchin
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ from .viewer_tab import ViewerTab
 from .toolbar_window import ToolbarWindow
 from . import file_utils
 from .file_utils import FileList
+from .config import get_config
 
 def create_action_tuple(name=None, stock_id=None, label=None, accel=None,
                         tooltip=None, fn=None):
@@ -54,16 +55,19 @@ class ApplicationMainWindow(gtk.Window):
         self.fullscreen_widget = None
         self.fullscreen_toolbar = ToolbarWindow()
         self.open_dialog = None
+        self.config = get_config()
         self.sort_type = FileList.SORT_BY_MOD_DATE
 
+        # Set screen size.
         try:
             self.set_screen(parent.get_screen())
         except AttributeError:
             self.connect('destroy', lambda *w: gtk.main_quit())
+        width, height = self._get_window_size()
+        self.set_default_size(width, height)
 
+        # Populate the window.
         self.set_title(self.application_name)
-        self.set_default_size(800, 600)
-
         self.ui_manager = ui_manager = gtk.UIManager()
         self.set_data('ui-manager', ui_manager)
         ui_info, action_group = self._create_action_group()
@@ -114,6 +118,39 @@ class ApplicationMainWindow(gtk.Window):
 
         self.show_all()
 
+    def _get_screen_size(self):
+        screen = self.get_screen()
+        num_monitors = screen.get_n_monitors()
+        geoms = [screen.get_monitor_geometry(i) for i in range(num_monitors)]
+        return (min(g.width for g in geoms), min(g.height for g in geoms))
+
+    def _get_window_size(self, min_size=(200, 200)):
+        screen_size = self._get_screen_size()
+        rel_size = (0.5, 0.8)
+        ret = []
+        for i, coord in enumerate(('width', 'height')):
+            abs_val = self.config.get('window', coord, of=int, default=None)
+            if abs_val is None:
+                rel_val = self.config.get('window', 'rel_' + coord, of=int,
+                                          default=rel_size[i])
+                abs_val = int(screen_size[i] * min(1.0, max(0.0, rel_val)))
+            ret.append(max(min_size[i], min(screen_size[i], abs_val)))
+        return tuple(ret)
+
+    def _get_thumb_size(self):
+        screen_size = self._get_screen_size()
+        rel_size = (0.6 / 4, 0.6 / 3)
+        ret = []
+        for i, coord in enumerate(('width', 'height')):
+            abs_val = self.config.get('thumb', 'max_' + coord, of=int,
+                                      default=None)
+            if abs_val is None:
+                rel_val = self.config.get('thumb', 'rel_' + coord, of=float,
+                                          default=rel_size[i])
+                abs_val = int(screen_size[i] * min(1.0, max(0.0, rel_val)))
+            ret.append(max(5, abs_val))
+        return tuple(ret)
+
     def _generate_config_retriever(self):
         '''Generate a callable which can be used to retrieve configuration.
 
@@ -126,7 +163,8 @@ class ApplicationMainWindow(gtk.Window):
         config_dict = \
            {'show_hidden_files': (lambda: show_hidden_toggle.get_active()),
             'reversed_sort': (lambda: reversed_toggle.get_active()),
-            'sort_type': (lambda: self.sort_type)}
+            'sort_type': (lambda: self.sort_type),
+            'thumb_size': (lambda: self._get_thumb_size())}
         def retriever(name, default=None):
             fn = config_dict.get(name, None)
             if fn is not None:
