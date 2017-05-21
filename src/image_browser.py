@@ -38,11 +38,16 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
                                  gobject.TYPE_NONE,
                                  (gtk.Adjustment, gtk.Adjustment))}
 
-    def __init__(self, start_dir, hadjustment=None, vadjustment=None):
+    def __init__(self, start_dir, hadjustment=None, vadjustment=None,
+                 config_retriever=None):
         BackCaller.__init__(self,
                             directory_changed=None,
                             image_clicked=None)
         gtk.DrawingArea.__init__(self)
+
+        # Callable object used to get configuration.
+        self.config_retriever = (config_retriever or
+                                 (lambda name, default_value: default_value))
 
         # Directory this object is browsing.
         self.location = Location(start_dir)
@@ -94,10 +99,16 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
     hadjustment = property(_get_hadjustment, _set_hadjustment)
     vadjustment = property(_get_vadjustment, _set_vadjustment)
 
-    def lay_out_album(self, width=None):
+    def _lay_out_album(self, width=None):
         if width is None:
             width, _ = self.window.get_size()
-        self.file_list = file_list = FileList(self.location.path)
+
+        # Create the file list based on the current configuration.
+        cfg = self.config_retriever
+        self.file_list = file_list = \
+          FileList(self.location.path,
+                   show_hidden_files=cfg('show_hidden_files', True))
+
         self.album = layout.ImageAlbum(file_list, max_width=width)
 
     def scroll_adjustment(self, hadjustment, vadjustment):
@@ -219,7 +230,7 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
 
     def on_size_change(self, myself, event):
         '''Called when the size of the object changes.'''
-        self.lay_out_album(event.width)
+        self._lay_out_album(event.width)
         self._update_scrollbars()
         self.orchestrator.clear_queue()
 
@@ -311,9 +322,14 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
 
         self.location = location
         self._vadjustment.value = self._get_y_location()
-        self.lay_out_album()
+        self._lay_out_album()
         self._update_scrollbars()
         self.call('directory_changed', location.path)
+        self.queue_draw()
+
+    def update_album(self):
+        self._lay_out_album()
+        self._update_scrollbars()
         self.queue_draw()
 
 ImageBrowser.set_set_scroll_adjustments_signal('set-scroll-adjustment')

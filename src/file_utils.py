@@ -30,14 +30,14 @@ class FileListItem(object):
 
 
 class FileList(object):
-    def __init__(self, dir_path, **kwargs):
+    def __init__(self, dir_path, show_hidden_files=True, **kwargs):
         self.callbacks = []
         self.full_path = dir_path = os.path.realpath(dir_path)
         self.file_items = items = []
         for i, args in enumerate(get_files_in_dir(dir_path, **kwargs)):
             is_dir, name = args
             item = FileListItem(i, is_dir, dir_path, name)
-            if not item.is_hidden():
+            if not item.is_hidden() or show_hidden_files:
                 items.append(item)
 
     def __iter__(self):

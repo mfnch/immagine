@@ -19,8 +19,9 @@ import gtk
 from .base_tab import BaseTab
 from .image_browser import ImageBrowser
 
+
 class BrowserTab(BaseTab):
-    def __init__(self, directory_path):
+    def __init__(self, directory_path, **kwargs):
         toolbar_desc = \
           ((gtk.STOCK_OPEN, 'Select a new directory to browse', 'on_open'),
            (gtk.STOCK_GO_UP, 'Parent directory', 'go_up'),
@@ -39,7 +40,7 @@ class BrowserTab(BaseTab):
         self.path = os.path.realpath(directory_path)
 
         # Image browser widget.
-        self.image_browser = ib = ImageBrowser(directory_path)
+        self.image_browser = ib = ImageBrowser(directory_path, **kwargs)
         sw = gtk.ScrolledWindow()
         sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         sw.set_shadow_type(gtk.SHADOW_IN)
@@ -97,3 +98,7 @@ class BrowserTab(BaseTab):
 
     def go_to_directory(self, directory):
         self.image_browser.go_to_directory(directory)
+
+    def update_album(self):
+        '''Regenerate the album after a change of configuration.'''
+        self.image_browser.update_album()

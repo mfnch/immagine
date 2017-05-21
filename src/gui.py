@@ -56,19 +56,18 @@ class ApplicationMainWindow(gtk.Window):
         self.set_title(self.application_name)
         self.set_default_size(800, 600)
 
-        merge = gtk.UIManager()
-        self.set_data('ui-manager', merge)
-        ui_info, action_group = self.__create_action_group()
-        merge.insert_action_group(action_group, 0)
-        self.add_accel_group(merge.get_accel_group())
+        self.ui_manager = ui_manager = gtk.UIManager()
+        self.set_data('ui-manager', ui_manager)
+        ui_info, action_group = self._create_action_group()
+        ui_manager.insert_action_group(action_group, 0)
+        self.add_accel_group(ui_manager.get_accel_group())
+        ui_manager.add_ui_from_string(ui_info)
 
-        try:
-            mergeid = merge.add_ui_from_string(ui_info)
-        except gobject.GError as msg:
-            print('Error doing add_ui_from_string: %s' % msg)
+        # A callable which can be used to retrieve global GUI configuration.
+        self.config_retriever = self._generate_config_retriever()
 
         # The menu is shared across all tabs.
-        bar = merge.get_widget("/MenuBar")
+        bar = ui_manager.get_widget('/MenuBar')
         bar.show()
 
         # Below the menu, we place the notebook.
@@ -106,6 +105,23 @@ class ApplicationMainWindow(gtk.Window):
         self.connect("motion_notify_event", self.on_motion_notify_event)
 
         self.show_all()
+
+    def _generate_config_retriever(self):
+        '''Generate a callable which can be used to retrieve configuration.
+
+        This callable receives two arguments (name, default_value) similarly to
+        the get method of a dict object.
+        '''
+        show_hidden_toggle = \
+          self.ui_manager.get_widget('/MenuBar/ViewMenu/ShowHidden')
+        config_dict = \
+           {'show_hidden_files': (lambda: show_hidden_toggle.get_active())}
+        def retriever(name, default=None):
+            fn = config_dict.get(name, None)
+            if fn is not None:
+                return fn()
+            return default
+        return retriever
 
     def change_layout(self):
         '''Switch in/out of fullscreen layout.'''
@@ -158,7 +174,7 @@ class ApplicationMainWindow(gtk.Window):
         n = self.notebook.get_current_page()
         return self.notebook.get_nth_page(n)
 
-    def __create_action_group(self):
+    def _create_action_group(self):
         ui_info = \
           '''<ui>
             <menubar name='MenuBar'>
@@ -202,7 +218,7 @@ class ApplicationMainWindow(gtk.Window):
         toggle_entries = \
           (toggle(name='ShowHidden', label='_Show hidden files',
                   accel='<control>H', tooltip='Show hidden files',
-                  fn=self.on_hide_toggle, value=True),)
+                  fn=self.on_hide_toggle, value=False),)
 
         action_group = gtk.ActionGroup("AppWindowActions")
         action_group.add_actions(action_entries)
@@ -224,7 +240,7 @@ class ApplicationMainWindow(gtk.Window):
         if not os.path.isdir(path):
             return None
 
-        bt = BrowserTab(path)
+        bt = BrowserTab(path, config_retriever=self.config_retriever)
         bt.set_callback('toggle_fullscreen', self.fullscreen_action)
         bt.set_callback('directory_changed', self.on_directory_changed)
         bt.set_callback('image_clicked', self.on_image_clicked)
@@ -329,8 +345,8 @@ class ApplicationMainWindow(gtk.Window):
         if choice is not None:
             self.browser_tab.go_to_directory(choice)
 
-    def on_hide_toggle(self, action):
-        pass
+    def on_hide_toggle(self, toggle_action):
+        self.browser_tab.update_album()
 
 
 def main(args=None):
