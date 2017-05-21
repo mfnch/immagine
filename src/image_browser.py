@@ -107,7 +107,9 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         cfg = self.config_retriever
         self.file_list = file_list = \
           FileList(self.location.path,
-                   show_hidden_files=cfg('show_hidden_files', True))
+                   show_hidden_files=cfg('show_hidden_files', True),
+                   reversed_sort=cfg('reversed_sort', False),
+                   sort_type=cfg('sort_type', FileList.SORT_BY_MOD_DATE))
 
         self.album = layout.ImageAlbum(file_list, max_width=width)
 

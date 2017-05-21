@@ -28,6 +28,7 @@ from .browser_tab import BrowserTab
 from .viewer_tab import ViewerTab
 from .toolbar_window import ToolbarWindow
 from . import file_utils
+from .file_utils import FileList
 
 def create_action_tuple(name=None, stock_id=None, label=None, accel=None,
                         tooltip=None, fn=None):
@@ -39,6 +40,12 @@ def create_toggle_tuple(name=None, stock_id=None, label=None, accel=None,
                         tooltip=None, fn=None, value=None):
     return (name, stock_id, label, accel, tooltip, fn, value)
 
+def create_radio_tuple(name=None, stock_id=None, label=None, accel=None,
+                       tooltip=None, value=0):
+    assert name is not None, 'name must be given in radio action tuple'
+    return (name, stock_id, label, accel, tooltip, value)
+
+
 class ApplicationMainWindow(gtk.Window):
     application_name = 'Immagine image viewer'
 
@@ -47,6 +54,7 @@ class ApplicationMainWindow(gtk.Window):
         self.fullscreen_widget = None
         self.fullscreen_toolbar = ToolbarWindow()
         self.open_dialog = None
+        self.sort_type = FileList.SORT_BY_MOD_DATE
 
         try:
             self.set_screen(parent.get_screen())
@@ -112,10 +120,13 @@ class ApplicationMainWindow(gtk.Window):
         This callable receives two arguments (name, default_value) similarly to
         the get method of a dict object.
         '''
-        show_hidden_toggle = \
-          self.ui_manager.get_widget('/MenuBar/ViewMenu/ShowHidden')
+        uim = self.ui_manager
+        show_hidden_toggle = uim.get_widget('/MenuBar/ViewMenu/ShowHidden')
+        reversed_toggle = uim.get_widget('/MenuBar/ViewMenu/ReverseSortOrder')
         config_dict = \
-           {'show_hidden_files': (lambda: show_hidden_toggle.get_active())}
+           {'show_hidden_files': (lambda: show_hidden_toggle.get_active()),
+            'reversed_sort': (lambda: reversed_toggle.get_active()),
+            'sort_type': (lambda: self.sort_type)}
         def retriever(name, default=None):
             fn = config_dict.get(name, None)
             if fn is not None:
@@ -187,6 +198,13 @@ class ApplicationMainWindow(gtk.Window):
                 <menuitem action='CloseTab'/>
                 <menuitem action='Fullscreen'/>
                 <menuitem action='ShowHidden'/>
+                <menu action='SortFilesBy'>
+                  <menuitem action='SortFilesByName'/>
+                  <menuitem action='SortFilesByModDate'/>
+                  <menuitem action='SortFilesByExt'/>
+                  <menuitem action='SortFilesBySize'/>
+                </menu>
+                <menuitem action='ReverseSortOrder'/>
               </menu>
               <menu action='HelpMenu'>
                 <menuitem action='About'/>
@@ -198,6 +216,7 @@ class ApplicationMainWindow(gtk.Window):
         action_entries = \
           (action(name='FileMenu', label='_File'),
            action(name='ViewMenu', label='_View'),
+           action(name='SortFilesBy', label='_Sort files by'),
            action(name='HelpMenu', label='_Help'),
            action(name='Quit', stock_id=gtk.STOCK_QUIT, label='Quit',
                   accel='<control>Q', tooltip='Quit',
@@ -218,11 +237,35 @@ class ApplicationMainWindow(gtk.Window):
         toggle_entries = \
           (toggle(name='ShowHidden', label='_Show hidden files',
                   accel='<control>H', tooltip='Show hidden files',
-                  fn=self.on_hide_toggle, value=False),)
+                  fn=self.update_album_handler, value=False),
+           toggle(name='ReverseSortOrder', label='_Reverse sort order',
+                  accel='<control>R', tooltip='Reverse the sort order',
+                  fn=self.update_album_handler, value=False))
 
-        action_group = gtk.ActionGroup("AppWindowActions")
+        radio = create_radio_tuple
+        radio_entries = \
+          (radio(name='SortFilesByName', label='Name',
+                 accel='<control>N', tooltip='Sort by file name',
+                 value=FileList.SORT_BY_FILE_NAME),
+           radio(name='SortFilesByModDate', label='Modification date',
+                 accel='<control>D',
+                 tooltip='Sort first by modification date, then name',
+                 value=FileList.SORT_BY_MOD_DATE),
+           radio(name='SortFilesByExt', label='Extension',
+                 accel='<control>E',
+                 tooltip='Sort first by file extension, then name',
+                 value=FileList.SORT_BY_FILE_EXT),
+           radio(name='SortFilesBySize', label='Size',
+                 accel='<control>S',
+                 tooltip='Sort first by file size, then name',
+                 value=FileList.SORT_BY_FILE_SIZE))
+
+        action_group = gtk.ActionGroup('AppWindowActions')
         action_group.add_actions(action_entries)
         action_group.add_toggle_actions(toggle_entries)
+        action_group.add_radio_actions(radio_entries,
+                                       on_change=self.on_radio_change,
+                                       value=self.sort_type)
         return (ui_info, action_group)
 
     def quit_action(self, action):
@@ -345,9 +388,14 @@ class ApplicationMainWindow(gtk.Window):
         if choice is not None:
             self.browser_tab.go_to_directory(choice)
 
-    def on_hide_toggle(self, toggle_action):
+    def update_album_handler(self, *args):
         self.browser_tab.update_album()
 
+    def on_radio_change(self, first_radio, active_radio):
+        new_sort_type = active_radio.get_current_value()
+        if new_sort_type != self.sort_type:
+            self.sort_type = new_sort_type
+            self.browser_tab.update_album()
 
 def main(args=None):
     args = args or sys.argv

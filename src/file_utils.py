@@ -30,6 +30,36 @@ class FileListItem(object):
 
 
 class FileList(object):
+    (SORT_BY_FILE_NAME,
+     SORT_BY_MOD_DATE,
+     SORT_BY_FILE_EXT,
+     SORT_BY_FILE_SIZE,
+     SORT_BY_IS_DIR) = range(5)
+
+    @classmethod
+    def build_key_generator(cls, sort_types, case_sensitive=False):
+        adj = ((lambda x: x) if case_sensitive else (lambda x: x.lower()))
+
+        gns = []
+        for sort_type in sort_types:
+            if sort_type == cls.SORT_BY_FILE_NAME:
+                gn = lambda is_dir, fn: adj(os.path.split(fn)[-1])
+            elif sort_type == cls.SORT_BY_FILE_EXT:
+                gn = lambda is_dir, fn: adj(os.path.splitext(fn)[-1])
+            elif sort_type == cls.SORT_BY_MOD_DATE:
+                gn = lambda is_dir, fn: os.path.getmtime(fn)
+            elif sort_type == cls.SORT_BY_FILE_SIZE:
+                gn = lambda is_dir, fn: os.path.getsize(fn)
+            elif sort_type == cls.SORT_BY_IS_DIR:
+                gn = lambda is_dir, fn: (0 if is_dir else 1)
+            else:
+                continue
+            gns.append(gn)
+
+        def key_generator(item):
+            return tuple(gn(*item) for gn in gns)
+        return key_generator
+
     def __init__(self, dir_path, show_hidden_files=True, **kwargs):
         self.callbacks = []
         self.full_path = dir_path = os.path.realpath(dir_path)
@@ -49,22 +79,11 @@ class FileList(object):
     def __getitem__(self, idx):
         return self.file_items[idx]
 
-    def set_from_directory(dir_path):
-        pass
-
     def register_callback(self, update_callback):
         self.callbacks.append(update_callback)
 
 
 image_file_extensions = ('.jpeg', '.jpg', '.png', '.tif', '.xpm', '.bmp')
-
-def default_file_sorter(isdir_path1, isdir_path2):
-    '''Directory come first, then picture created first comes first.'''
-
-    if isdir_path1[0] != isdir_path2[0]:
-        return (-1 if isdir_path1[0] else 1)
-    return cmp(os.path.getmtime(isdir_path1[1]),
-               os.path.getmtime(isdir_path2[1]))
 
 def list_dir(directory_path):
     '''Return the files in the directory or an empty list if the directory
@@ -77,18 +96,24 @@ def list_dir(directory_path):
         return []
     return [os.path.join(directory_path, entry) for entry in entries]
 
-def get_files_in_dir(directory_path,
-                     file_extensions=None,
-                     file_sorter=None):
+def get_files_in_dir(directory_path, **kwargs):
     '''Return tuples (isdir, full_path) where isdir is a boolean indicating
     whether the item is a directory and full_path is the path to it.
-    The tuples are ordered using file_sorter or using the default_file_sorter
-    if file_sorter is None.'''
+    The following keyword arguments can be used:
 
-    return categorize_files(list_dir(directory_path),
-                            file_extensions, file_sorter)
+    `file_extensions`: list of extensions of files to consider. Files with
+      different extension are ignored.
 
-def categorize_files(file_list, file_extensions=None, file_sorter=None):
+    `sort_type`: how the files are sorted. Can be FileList.SORT_BY_FILE_NAME
+      or another value of the same enumeration.
+
+    `reversed_sort`: whether the sort order should be reversed. Default order
+      is from smaller to bigger.
+    '''
+    return categorize_files(list_dir(directory_path), **kwargs)
+
+def categorize_files(file_list, file_extensions=None, sort_type=None,
+                     reversed_sort=False):
     '''Similar to get_files_in_dir, but uses the files in the list given as
     first argument, rather than obtaining the file list from a directory path.
     '''
@@ -106,7 +131,18 @@ def categorize_files(file_list, file_extensions=None, file_sorter=None):
                 continue
         isdir_file_tuples.append((isdir, full_path))
 
-    isdir_file_tuples.sort(file_sorter or default_file_sorter)
+
+    # For now we only provide one sort type. Later we may want to provide a
+    # tuple of sort types from the one which has the higher precedence to the
+    # one which has the lowest precedence. Infrastructure for this is already
+    # in place. Here we map the single sort order to a tuple which makes sense.
+    if sort_type == FileList.SORT_BY_FILE_NAME:
+        sort_types = (sort_type,)
+    else:
+        sort_types = (sort_type, FileList.SORT_BY_FILE_NAME)
+
+    key = FileList.build_key_generator(sort_types)
+    isdir_file_tuples.sort(key=key, reverse=reversed_sort)
     return isdir_file_tuples
 
 def pick_file_from_dir(directory_path, out_list, file_extensions=None,
