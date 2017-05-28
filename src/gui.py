@@ -355,7 +355,7 @@ class ApplicationMainWindow(gtk.Window):
     def about_action(self, action):
         dialog = gtk.AboutDialog()
         dialog.set_name('Immagine Image Viewer')
-        dialog.set_copyright('\302\251 Copyright 2016 Matteo Franchin')
+        dialog.set_copyright('\302\251 Copyright 2016, 2017 Matteo Franchin')
         dialog.set_website('https://github.com/mfnch/immagine')
         dialog.connect('response', lambda d, r: d.destroy())
         dialog.show()
