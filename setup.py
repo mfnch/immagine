@@ -23,7 +23,7 @@ with open(readme_path, 'r') as f:
     long_description = f.read()
 
 setup(name='immagine',
-      version='0.4.dev0',
+      version='0.4',
       description='Image viewer and browser with directory thumbnails',
       long_description=long_description,
       author='Matteo Franchin',
