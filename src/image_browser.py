@@ -204,9 +204,8 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         if tn.state is THUMBNAIL_DONE:
             return \
               gtk.gdk.pixbuf_new_from_array(tn.data, gtk.gdk.COLORSPACE_RGB, 8)
-        return icons.generate_text_icon('Loading...\n' + file_item.name,
-                                        thumbnail.size,
-                                        cache=True,
+        text = 'Loading...\n' + os.path.split(file_item.name)[-1]
+        return icons.generate_text_icon(text, thumbnail.size, cache=True,
                                         out_format=icons.FORMAT_PIXBUF)
         return build_empty_thumbnail(thumbnail.size)
 

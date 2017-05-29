@@ -1,4 +1,4 @@
-# Copyright 2016 Matteo Franchin
+# Copyright 2016, 2017 Matteo Franchin
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import pangocairo
 
 (FORMAT_PIXBUF, FORMAT_ARRAY) = range(2)
 
+
 class Icon(object):
     def __init__(self, size, out_format):
         self.width, self.height = size
@@ -44,6 +45,7 @@ class Icon(object):
                                                  gtk.gdk.COLORSPACE_RGB, 8)
         return data
 
+
 class TextIcon(Icon):
     def __init__(self, text, *args):
         super(TextIcon, self).__init__(*args)
@@ -61,7 +63,9 @@ class TextIcon(Icon):
         ctx.stroke()
 
         # Translates context so that desired text upperleft corner is at 0,0
-        ctx.translate(10, 50)
+        ctx.move_to(self.width // 10, self.height // 3)
+        scale_factor = min(self.width, self.height) / 150.0
+        ctx.scale(scale_factor, scale_factor)
 
         pangocairo_context = pangocairo.CairoContext(ctx)
         pangocairo_context.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
@@ -72,9 +76,16 @@ class TextIcon(Icon):
         layout.set_font_description(font)
 
         layout.set_text(self.text)
-        ctx.set_source_rgb(0, 0, 0)
+        lg = cairo.LinearGradient(0, 0, self.width / scale_factor, 0)
+        lg.add_color_stop_rgba( 0.0, 0.0, 0.0, 0.0, 0.0)
+        lg.add_color_stop_rgba(0.05, 0.0, 0.0, 0.0, 1.0)
+        lg.add_color_stop_rgba(0.95, 0.0, 0.0, 0.0, 1.0)
+        lg.add_color_stop_rgba( 1.0, 0.0, 0.0, 0.0, 0.0)
+        ctx.set_source(lg)
+
         pangocairo_context.update_layout(layout)
         pangocairo_context.show_layout(layout)
+
 
 def generate_text_icon(text, size, cache=False,
                        out_format=FORMAT_ARRAY):
