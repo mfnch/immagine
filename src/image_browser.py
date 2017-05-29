@@ -39,7 +39,7 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
                                  (gtk.Adjustment, gtk.Adjustment))}
 
     def __init__(self, start_dir, hadjustment=None, vadjustment=None,
-                 config_retriever=None):
+                 config_retriever=None, config=None):
         BackCaller.__init__(self,
                             directory_changed=None,
                             image_clicked=None)
@@ -48,6 +48,8 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         # Callable object used to get configuration.
         self.config_retriever = (config_retriever or
                                  (lambda name, default_value: default_value))
+        self.config = cfg = config
+        cfg.override('thumb.final_size', self._thumb_final_size_getter)
 
         # Directory this object is browsing.
         self.location = Location(start_dir)
@@ -84,6 +86,17 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         self.connect('button-press-event', self.on_button_press_event)
         self.connect('query-tooltip', self.on_query_tooltip)
 
+    def _thumb_final_size_getter(self, parent=None, attr_name=None):
+        cfg = self.config.get
+        min_x, min_y = cfg('thumb.min_abs_size', (32, 32))
+        scr_x, scr_y = cfg('screen.size', (1366, 768))
+        scale_exp = cfg('thumb.scale_exp', 0.0, float)
+        scale_base = max(1.05, min(2.0, cfg('thumb.scale_base', 1.25, float)))
+        scale = scale_base**scale_exp
+        thumb_x, thumb_y = cfg('thumb.size')
+        return (int(max(min_x, min(scr_x // 2, thumb_x*scale))),
+                int(max(min_y, min(scr_y // 2, thumb_y*scale))))
+
     def _get_hadjustment(self):
         return self._hadjustment
 
@@ -104,15 +117,16 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
             width, _ = self.window.get_size()
 
         # Create the file list based on the current configuration.
-        cfg = self.config_retriever
+        cfg_ret = self.config_retriever
+        cfg = self.config.get
         self.file_list = file_list = \
           FileList(self.location.path,
-                   show_hidden_files=cfg('show_hidden_files', True),
-                   reversed_sort=cfg('reversed_sort', False),
-                   sort_type=cfg('sort_type', FileList.SORT_BY_MOD_DATE))
+                   show_hidden_files=cfg_ret('show_hidden_files', True),
+                   reversed_sort=cfg_ret('reversed_sort', False),
+                   sort_type=cfg_ret('sort_type', FileList.SORT_BY_MOD_DATE))
 
         self.album = layout.ImageAlbum(file_list, max_width=width,
-                                       max_size=cfg('thumb_size'))
+                                       max_size=cfg('thumb.final_size'))
 
     def scroll_adjustment(self, hadjustment, vadjustment):
         self._hadjustment = hadjustment
@@ -331,8 +345,23 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         self.queue_draw()
 
     def update_album(self):
+        '''Redraw the browser view.'''
         self._lay_out_album()
         self._update_scrollbars()
         self.queue_draw()
+
+    def zoom(self, new_exp, relative=True):
+        '''Change the scale exponent used to scale thumbnails.'''
+        prev_scale_exp = self.config.get('thumb.scale_exp', 0.0, float)
+        scale_exp = (prev_scale_exp if relative else 0.0) + new_exp
+        prev_size = self.config.get('thumb.final_size')
+        self.config.set('thumb.scale_exp', scale_exp)
+        new_size = self.config.get('thumb.final_size')
+        if new_size[0] == prev_size[0] or new_size[1] == prev_size[1]:
+            # Scale had no effect: maybe scale is too small or too big. Restore
+            # previous scale exponent and quit.
+            self.config.set('thumb.scale_exp', prev_scale_exp)
+            return
+        self.update_album()
 
 ImageBrowser.set_set_scroll_adjustments_signal('set-scroll-adjustment')

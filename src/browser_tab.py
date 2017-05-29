@@ -28,6 +28,10 @@ class BrowserTab(BaseTab):
            (gtk.STOCK_GO_BACK, 'Go back to previous directory', 'go_back'),
            (gtk.STOCK_GO_FORWARD, 'Go to next directory', 'go_forward'),
            (),
+           (gtk.STOCK_ZOOM_IN, 'Increase thumbnail size', 'zoom_in'),
+           (gtk.STOCK_ZOOM_OUT, 'Decrease thumbnail size', 'zoom_out'),
+           (gtk.STOCK_ZOOM_100, 'Default thumbnail size', 'zoom_100'),
+           (),
            (gtk.STOCK_FULLSCREEN, 'Enter full-screen mode', 'fullscreen'))
 
         super(BrowserTab, self).__init__(directory_path,
@@ -36,11 +40,13 @@ class BrowserTab(BaseTab):
                                          directory_changed=None,
                                          image_clicked=None,
                                          open_location=None)
+        self.config = kwargs.get('config')
+
         # Tab setup.
         self.path = os.path.realpath(directory_path)
 
         # Image browser widget.
-        self.image_browser = ib = ImageBrowser(directory_path, **kwargs)
+        self._image_browser = ib = ImageBrowser(directory_path, **kwargs)
         sw = gtk.ScrolledWindow()
         sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         sw.set_shadow_type(gtk.SHADOW_IN)
@@ -57,9 +63,11 @@ class BrowserTab(BaseTab):
         # Activate buttons properly.
         self.on_directory_changed(self.path)
 
+        self._image_browser.grab_focus()
+
     def on_directory_changed(self, new_directory):
         self.label.set_text(new_directory)
-        ib = self.image_browser
+        ib = self._image_browser
         self.toolbutton_go_back.set_sensitive(ib.has_previous_directory())
         self.toolbutton_go_forward.set_sensitive(ib.has_next_directory())
         self.call('directory_changed', new_directory)
@@ -71,34 +79,49 @@ class BrowserTab(BaseTab):
         self.call('open_location')
 
     def on_key_press_event(self, event):
-        name = gtk.gdk.keyval_name(event.keyval).lower()
+        name = ''
         if event.state & gtk.gdk.CONTROL_MASK:
-            if name == 'up':
-                self.go_up()
-                return True
-            elif name == 'left':
-                self.go_back()
-                return True
-            elif name == 'right':
-                self.go_forward()
-                return True
-        if name == 'escape':
+            name += 'ctrl+'
+        name += gtk.gdk.keyval_name(event.keyval).lower()
+        if name == 'ctrl+minus':
+            self.zoom_out()
+        elif name == 'ctrl+plus':
+            self.zoom_in()
+        elif name in ('ctrl+0', 'ctrl+9', 'right'):
+            self.zoom_100()
+        if name == 'ctrl+up':
+            self.go_up()
+        elif name == 'ctrl+left':
             self.go_back()
-            return True
-        return False
+        elif name == 'ctrl+right':
+            self.go_forward()
+        elif name == 'escape':
+            self.go_back()
+        else:
+            return False
+        return True
+
+    def zoom_in(self, obj=None):
+        self._image_browser.zoom(1.0)
+
+    def zoom_out(self, obj=None):
+        self._image_browser.zoom(-1.0)
+
+    def zoom_100(self, *args):
+        self._image_browser.zoom(0.0, relative=False)
 
     def go_up(self, action=None):
-        self.image_browser.go_to_parent_directory()
+        self._image_browser.go_to_parent_directory()
 
     def go_back(self, action=None):
-        self.image_browser.go_to_previous_directory()
+        self._image_browser.go_to_previous_directory()
 
     def go_forward(self, action=None):
-        self.image_browser.go_to_next_directory()
+        self._image_browser.go_to_next_directory()
 
     def go_to_directory(self, directory):
-        self.image_browser.go_to_directory(directory)
+        self._image_browser.go_to_directory(directory)
 
     def update_album(self):
         '''Regenerate the album after a change of configuration.'''
-        self.image_browser.update_album()
+        self._image_browser.update_album()

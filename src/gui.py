@@ -55,7 +55,10 @@ class ApplicationMainWindow(gtk.Window):
         self.fullscreen_widget = None
         self.fullscreen_toolbar = ToolbarWindow()
         self.open_dialog = None
-        self.config = get_config()
+        self.config = cfg = get_config()
+        cfg.override('thumb.size', self._thumb_size_getter)
+        cfg.override('screen.size', self._screen_size_getter)
+
         self.sort_type = FileList.SORT_BY_MOD_DATE
 
         # Set screen size.
@@ -118,38 +121,39 @@ class ApplicationMainWindow(gtk.Window):
 
         self.show_all()
 
-    def _get_screen_size(self):
+    def _screen_size_getter(self, parent=None, attr_name=None):
         screen = self.get_screen()
         num_monitors = screen.get_n_monitors()
         geoms = [screen.get_monitor_geometry(i) for i in range(num_monitors)]
         return (min(g.width for g in geoms), min(g.height for g in geoms))
 
     def _get_window_size(self, min_size=(200, 200)):
-        screen_size = self._get_screen_size()
+        screen_size = self._screen_size_getter()
         rel_size = (0.5, 0.8)
         ret = []
         for i, coord in enumerate(('width', 'height')):
-            abs_val = self.config.get('window', coord, of=int, default=None)
+            abs_val = self.config.get('window.size.' + coord,
+                                      of=int, default=None)
             if abs_val is None:
-                rel_val = self.config.get('window', 'rel_' + coord, of=int,
+                rel_val = self.config.get('window.rel.' + coord, of=int,
                                           default=rel_size[i])
                 abs_val = int(screen_size[i] * min(1.0, max(0.0, rel_val)))
             ret.append(max(min_size[i], min(screen_size[i], abs_val)))
         return tuple(ret)
 
-    def _get_thumb_size(self):
-        screen_size = self._get_screen_size()
+    def _thumb_size_getter(self, parent=None, attr_name=None):
+        screen_size = self._screen_size_getter()
         rel_size = (0.6 / 4, 0.6 / 3)
         ret = []
         for i, coord in enumerate(('width', 'height')):
-            abs_val = self.config.get('thumb', 'max_' + coord, of=int,
+            abs_val = self.config.get('thumb.max.' + coord, of=int,
                                       default=None)
             if abs_val is None:
-                rel_val = self.config.get('thumb', 'rel_' + coord, of=float,
+                rel_val = self.config.get('thumb.rel.' + coord, of=float,
                                           default=rel_size[i])
                 abs_val = int(screen_size[i] * min(1.0, max(0.0, rel_val)))
             ret.append(max(5, abs_val))
-        return tuple(ret)
+        return ret
 
     def _generate_config_retriever(self):
         '''Generate a callable which can be used to retrieve configuration.
@@ -163,8 +167,7 @@ class ApplicationMainWindow(gtk.Window):
         config_dict = \
            {'show_hidden_files': (lambda: show_hidden_toggle.get_active()),
             'reversed_sort': (lambda: reversed_toggle.get_active()),
-            'sort_type': (lambda: self.sort_type),
-            'thumb_size': (lambda: self._get_thumb_size())}
+            'sort_type': (lambda: self.sort_type)}
         def retriever(name, default=None):
             fn = config_dict.get(name, None)
             if fn is not None:
@@ -229,6 +232,7 @@ class ApplicationMainWindow(gtk.Window):
             <menubar name='MenuBar'>
               <menu action='FileMenu'>
                 <menuitem action='Open'/>
+                <menuitem action='SaveConfig'/>
                 <separator/>
                 <menuitem action='Quit'/>
               </menu>
@@ -262,6 +266,10 @@ class ApplicationMainWindow(gtk.Window):
            action(name='Open', stock_id=gtk.STOCK_OPEN,
                   label='_Open directory', accel='<control>O',
                   tooltip='Open a directory', fn=self.on_open_location),
+           action(name='SaveConfig', stock_id=gtk.STOCK_SAVE,
+                  label='_Save configuration', accel='<control>C',
+                  tooltip='Save Immagine configuration',
+                  fn=self.on_save_config),
            action(name='CloseTab', label='_Close current tab',
                   accel='<control>W', tooltip='Toggle fullscreen mode',
                   fn=self.close_tab_action),
@@ -321,12 +329,12 @@ class ApplicationMainWindow(gtk.Window):
         if not os.path.isdir(path):
             return None
 
-        bt = BrowserTab(path, config_retriever=self.config_retriever)
+        bt = BrowserTab(path, config_retriever=self.config_retriever,
+                        config=self.config)
         bt.set_callback('toggle_fullscreen', self.fullscreen_action)
         bt.set_callback('directory_changed', self.on_directory_changed)
         bt.set_callback('image_clicked', self.on_image_clicked)
         bt.set_callback('open_location', self.on_open_location)
-        bt.image_browser.grab_focus()
         bt.show_all()
 
         self.notebook.append_page(bt, tab_label=bt.label)
@@ -425,6 +433,9 @@ class ApplicationMainWindow(gtk.Window):
 
         if choice is not None:
             self.browser_tab.go_to_directory(choice)
+
+    def on_save_config(self, *args):
+        self.config.save()
 
     def update_album_handler(self, *args):
         self.browser_tab.update_album()

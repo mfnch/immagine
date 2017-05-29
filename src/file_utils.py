@@ -131,18 +131,18 @@ def categorize_files(file_list, file_extensions=None, sort_type=None,
                 continue
         isdir_file_tuples.append((isdir, full_path))
 
-
     # For now we only provide one sort type. Later we may want to provide a
     # tuple of sort types from the one which has the higher precedence to the
     # one which has the lowest precedence. Infrastructure for this is already
     # in place. Here we map the single sort order to a tuple which makes sense.
-    if sort_type == FileList.SORT_BY_FILE_NAME:
-        sort_types = (sort_type,)
-    else:
-        sort_types = (sort_type, FileList.SORT_BY_FILE_NAME)
+    if sort_type is not None:
+        if sort_type == FileList.SORT_BY_FILE_NAME:
+            sort_types = (sort_type,)
+        else:
+            sort_types = (sort_type, FileList.SORT_BY_FILE_NAME)
 
-    key = FileList.build_key_generator(sort_types)
-    isdir_file_tuples.sort(key=key, reverse=reversed_sort)
+        key = FileList.build_key_generator(sort_types)
+        isdir_file_tuples.sort(key=key, reverse=reversed_sort)
     return isdir_file_tuples
 
 def pick_file_from_dir(directory_path, out_list, file_extensions=None,
