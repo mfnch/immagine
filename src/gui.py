@@ -55,9 +55,7 @@ class ApplicationMainWindow(gtk.Window):
         self.fullscreen_widget = None
         self.fullscreen_toolbar = ToolbarWindow()
         self.open_dialog = None
-        self.config = cfg = get_config()
-        cfg.override('thumb.size', self._thumb_size_getter)
-        cfg.override('screen.size', self._screen_size_getter)
+        self._config = get_config()
 
         self.sort_type = FileList.SORT_BY_MOD_DATE
 
@@ -78,8 +76,17 @@ class ApplicationMainWindow(gtk.Window):
         self.add_accel_group(ui_manager.get_accel_group())
         ui_manager.add_ui_from_string(ui_info)
 
-        # A callable which can be used to retrieve global GUI configuration.
-        self.config_retriever = self._generate_config_retriever()
+        # Connect configuration handling with GUI.
+        cfg = self._config
+        cfg.override('thumb.size', self._thumb_size_getter)
+        cfg.override('screen.size', self._screen_size_getter)
+        toggle = ui_manager.get_widget('/MenuBar/ViewMenu/ShowHidden')
+        cfg.override('browser.show_hidden_files',
+                     lambda *args: toggle.get_active())
+        toggle = ui_manager.get_widget('/MenuBar/ViewMenu/ReverseSortOrder')
+        cfg.override('browser.reversed_sort',
+                     lambda *args: toggle.get_active())
+        cfg.override('browser.sort_type', lambda *args: self.sort_type)
 
         # The menu is shared across all tabs.
         bar = ui_manager.get_widget('/MenuBar')
@@ -132,11 +139,11 @@ class ApplicationMainWindow(gtk.Window):
         rel_size = (0.5, 0.8)
         ret = []
         for i, coord in enumerate(('width', 'height')):
-            abs_val = self.config.get('window.size.' + coord,
-                                      of=int, default=None)
+            abs_val = self._config.get('window.size.' + coord,
+                                       of=int, default=None)
             if abs_val is None:
-                rel_val = self.config.get('window.rel.' + coord, of=int,
-                                          default=rel_size[i])
+                rel_val = self._config.get('window.rel.' + coord, of=int,
+                                           default=rel_size[i])
                 abs_val = int(screen_size[i] * min(1.0, max(0.0, rel_val)))
             ret.append(max(min_size[i], min(screen_size[i], abs_val)))
         return tuple(ret)
@@ -146,34 +153,14 @@ class ApplicationMainWindow(gtk.Window):
         rel_size = (0.6 / 4, 0.6 / 3)
         ret = []
         for i, coord in enumerate(('width', 'height')):
-            abs_val = self.config.get('thumb.max.' + coord, of=int,
-                                      default=None)
+            abs_val = self._config.get('thumb.max.' + coord, of=int,
+                                       default=None)
             if abs_val is None:
-                rel_val = self.config.get('thumb.rel.' + coord, of=float,
-                                          default=rel_size[i])
+                rel_val = self._config.get('thumb.rel.' + coord, of=float,
+                                           default=rel_size[i])
                 abs_val = int(screen_size[i] * min(1.0, max(0.0, rel_val)))
             ret.append(max(5, abs_val))
         return ret
-
-    def _generate_config_retriever(self):
-        '''Generate a callable which can be used to retrieve configuration.
-
-        This callable receives two arguments (name, default_value) similarly to
-        the get method of a dict object.
-        '''
-        uim = self.ui_manager
-        show_hidden_toggle = uim.get_widget('/MenuBar/ViewMenu/ShowHidden')
-        reversed_toggle = uim.get_widget('/MenuBar/ViewMenu/ReverseSortOrder')
-        config_dict = \
-           {'show_hidden_files': (lambda: show_hidden_toggle.get_active()),
-            'reversed_sort': (lambda: reversed_toggle.get_active()),
-            'sort_type': (lambda: self.sort_type)}
-        def retriever(name, default=None):
-            fn = config_dict.get(name, None)
-            if fn is not None:
-                return fn()
-            return default
-        return retriever
 
     def change_layout(self):
         '''Switch in/out of fullscreen layout.'''
@@ -329,8 +316,7 @@ class ApplicationMainWindow(gtk.Window):
         if not os.path.isdir(path):
             return None
 
-        bt = BrowserTab(path, config_retriever=self.config_retriever,
-                        config=self.config)
+        bt = BrowserTab(path, config=self._config)
         bt.set_callback('toggle_fullscreen', self.fullscreen_action)
         bt.set_callback('directory_changed', self.on_directory_changed)
         bt.set_callback('image_clicked', self.on_image_clicked)
@@ -435,7 +421,7 @@ class ApplicationMainWindow(gtk.Window):
             self.browser_tab.go_to_directory(choice)
 
     def on_save_config(self, *args):
-        self.config.save()
+        self._config.save()
 
     def update_album_handler(self, *args):
         self.browser_tab.update_album()
@@ -445,6 +431,7 @@ class ApplicationMainWindow(gtk.Window):
         if new_sort_type != self.sort_type:
             self.sort_type = new_sort_type
             self.browser_tab.update_album()
+
 
 def main(args=None):
     args = args or sys.argv

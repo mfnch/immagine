@@ -39,15 +39,12 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
                                  (gtk.Adjustment, gtk.Adjustment))}
 
     def __init__(self, start_dir, hadjustment=None, vadjustment=None,
-                 config_retriever=None, config=None):
+                 config=None):
         BackCaller.__init__(self,
                             directory_changed=None,
                             image_clicked=None)
         gtk.DrawingArea.__init__(self)
 
-        # Callable object used to get configuration.
-        self.config_retriever = (config_retriever or
-                                 (lambda name, default_value: default_value))
         self.config = cfg = config
         cfg.override('thumb.final_size', self._thumb_final_size_getter)
 
@@ -117,13 +114,12 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
             width, _ = self.window.get_size()
 
         # Create the file list based on the current configuration.
-        cfg_ret = self.config_retriever
         cfg = self.config.get
         self.file_list = file_list = \
           FileList(self.location.path,
-                   show_hidden_files=cfg_ret('show_hidden_files', True),
-                   reversed_sort=cfg_ret('reversed_sort', False),
-                   sort_type=cfg_ret('sort_type', FileList.SORT_BY_MOD_DATE))
+                   show_hidden_files=cfg('browser.show_hidden_files', True),
+                   reversed_sort=cfg('browser.reversed_sort', False),
+                   sort_type=cfg('browser.sort_type', FileList.SORT_BY_MOD_DATE))
 
         self.album = layout.ImageAlbum(file_list, max_width=width,
                                        max_size=cfg('thumb.final_size'))
