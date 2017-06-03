@@ -114,7 +114,10 @@ class ImageAlbum(object):
 
     def find_row_at_y(self, y):
         '''Find the row containing the given y coordinate. Return the index of
-        the row or None if no row was found.'''
+        the row or None if no row was found. Note that the horizontal margin
+        separating different rows is considered to be part of the row
+        containing the thumbnails above the margin.
+        '''
         rows = self.rows
         if len(rows) < 1:
             return None
@@ -150,15 +153,23 @@ class ImageAlbum(object):
         first_row = self.find_row_at_y(y)
         if first_row is None:
             return []
-        last_row = first_row
+
+        # If y hits the margin, then start from the row below.
         rows = self.rows
+        while y >= rows[first_row].pos[1] + rows[first_row].size[1]:
+            first_row += 1
+
+        last_row = first_row
         y_end = y + height
         while last_row < len(rows):
             lr = rows[last_row]
             if lr.pos[1] + lr.size[1] >= y_end:
-                break
+                if lr.pos[1] < y_end:
+                    last_row += 1
+                return rows[first_row:last_row]
             last_row += 1
-        return rows[first_row:last_row + 1]
+
+        return rows[first_row:]
 
     def get_thumbnails(self, x, y, width, height):
         '''Get a list of images inside the given region.'''

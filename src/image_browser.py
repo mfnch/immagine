@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import logging
 
 import gobject
 import gtk
@@ -121,8 +122,10 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
                    reversed_sort=cfg('browser.reversed_sort', False),
                    sort_type=cfg('browser.sort_type', FileList.SORT_BY_MOD_DATE))
 
-        self.album = layout.ImageAlbum(file_list, max_width=width,
-                                       max_size=cfg('thumb.final_size'))
+        self.album = layout.ImageAlbum(file_list,
+                                       max_width=width,
+                                       max_size=cfg('thumb.final_size'),
+                                       border=cfg('thumb.border', (5, 5)))
 
     def scroll_adjustment(self, hadjustment, vadjustment):
         self._hadjustment = hadjustment
@@ -219,19 +222,26 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
 
         dy = self._get_y_location()
         ea = event.area
-        x, y, width, height = (ea.x, ea.y + dy, ea.width, ea.height)
 
-        for tn in self.album.get_thumbnails(x, y, width, height):
+        # Compute viewport coordinates.
+        vp_x0, vp_y0 = (ea.x, ea.y + dy)
+        vp_width, vp_height = (ea.width, ea.height)
+        vp_x1 = vp_x0 + vp_width
+        vp_y1 = vp_y0 + vp_height
+
+        for tn in self.album.get_thumbnails(vp_x0, vp_y0, vp_width, vp_height):
+            x, y = tn.pos
             pixbuf = self.get_thumbnail_pixbuf(tn)
-            x0 = max(tn.pos[0], x)
-            y0 = max(tn.pos[1], y)
-            x1 = min(tn.pos[0] + pixbuf.get_width(), x + width)
-            y1 = min(tn.pos[1] + pixbuf.get_height(), y + height)
+            x0 = max(x, vp_x0)
+            y0 = max(y, vp_y0)
+            x1 = min(x + pixbuf.get_width(), vp_x1)
+            y1 = min(y + pixbuf.get_height(), vp_y1)
             sx = x1 - x0
             sy = y1 - y0
-            buf_area = pixbuf.subpixbuf(x0 - tn.pos[0], y0 - tn.pos[1], sx, sy)
-            if buf_area is None:
+            if sx <= 0 or sy <= 0:
+                logging.warning('Error: sx={}, sy={}'.format(sx, sy))
                 continue
+            buf_area = pixbuf.subpixbuf(x0 - x, y0 - y, sx, sy)
             rowstride = buf_area.get_rowstride()
             pixels = buf_area.get_pixels()
             self.window.draw_rgb_image(self.style.black_gc,
