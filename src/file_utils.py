@@ -25,9 +25,6 @@ class FileListItem(object):
         self.name = name
         self.full_path = os.path.join(dir_path, name)
 
-    def is_hidden(self):
-        return os.path.split(self.name)[-1].startswith('.')
-
 
 class FileList(object):
     (SORT_BY_FILE_NAME,
@@ -60,15 +57,13 @@ class FileList(object):
             return tuple(gn(*item) for gn in gns)
         return key_generator
 
-    def __init__(self, dir_path, show_hidden_files=True, **kwargs):
+    def __init__(self, dir_path, **kwargs):
         self.callbacks = []
         self.full_path = dir_path = os.path.realpath(dir_path)
         self.file_items = items = []
         for i, args in enumerate(get_files_in_dir(dir_path, **kwargs)):
             is_dir, name = args
-            item = FileListItem(i, is_dir, dir_path, name)
-            if not item.is_hidden() or show_hidden_files:
-                items.append(item)
+            items.append(FileListItem(i, is_dir, dir_path, name))
 
     def __iter__(self):
         return iter(self.file_items)
@@ -112,8 +107,12 @@ def get_files_in_dir(directory_path, **kwargs):
     '''
     return categorize_files(list_dir(directory_path), **kwargs)
 
+def is_hidden(full_path):
+    '''Whether the given file is hidden.'''
+    return os.path.split(full_path)[-1].startswith('.')
+
 def categorize_files(file_list, file_extensions=None, sort_type=None,
-                     reversed_sort=False):
+                     reversed_sort=False, show_hidden_files=True):
     '''Similar to get_files_in_dir, but uses the files in the list given as
     first argument, rather than obtaining the file list from a directory path.
     '''
@@ -121,6 +120,9 @@ def categorize_files(file_list, file_extensions=None, sort_type=None,
     exts = file_extensions or image_file_extensions
     isdir_file_tuples = []
     for full_path in file_list:
+        if not show_hidden_files and is_hidden(full_path):
+            continue
+
         if not os.path.exists(full_path):
             continue
 

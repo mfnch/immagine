@@ -142,12 +142,15 @@ class ViewerTab(BaseTab):
 
     def change_picture(self, delta_index):
         idx = self.file_index + delta_index
-        if idx < 0 or idx >= len(self.file_list):
-            return False
-        self.image_path = self.file_list[idx].full_path
-        self.file_index = idx
-        self.update_title(self.image_path)
-        self.zoom_fit()
+        while 0 <= idx < len(self.file_list):
+            file_item = self.file_list[idx]
+            if not file_item.is_dir:
+                self.image_path = file_item.full_path
+                self.file_index = idx
+                self.update_title(self.image_path)
+                self.zoom_fit()
+                return
+            idx += delta_index
 
     def change_previous(self, *ignore):
         self.change_picture(-1)
