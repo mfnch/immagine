@@ -70,13 +70,13 @@ class ViewerTab(BaseTab):
             self.zoom_out()
         elif name in ('ctrl+plus', 'down'):
             self.zoom_in()
-        elif name in ('ctrl+0', 'right'):
+        elif name == 'ctrl+0':
             self.zoom_fit()
-        elif name in ('ctrl+9', 'left'):
+        elif name == 'ctrl+9':
             self.zoom_100()
-        elif name == 'page_up':
+        elif name == 'left':
             self.change_previous()
-        elif name == 'page_down':
+        elif name == 'right':
             self.change_next()
         elif name == 'escape':
             self.close_tab()
