@@ -183,7 +183,6 @@ def choose_representatives(directory_path, num=4, **kwargs):
     tol = 2                             # Num of non-image files we tolerate.
     image_content_ratio = ((len(all_images) + tol) * 100) // (n + tol)
     is_image_folder = (image_content_ratio > 60)
-    # print('is_image_folder("%s") = %s' % (directory_path, is_image_folder))
 
     # Pick at least one image from this directory.
     out = []

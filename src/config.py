@@ -69,7 +69,10 @@ class Config(object):
         d = self._build_config_dict(self._config_dict)
         out = json.dumps(d, sort_keys=True, indent=4, separators=(',', ': '))
         fn = self.get_file_name()
+        parent_dir = os.path.dirname(fn)
         try:
+            if not os.path.exists(parent_dir):
+                os.makedirs(parent_dir)
             with open(fn, 'w') as f:
                 f.write(out)
         except Exception as exc:
