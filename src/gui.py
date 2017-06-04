@@ -150,7 +150,7 @@ class ApplicationMainWindow(gtk.Window):
 
     def _thumb_size_getter(self, parent=None, attr_name=None):
         screen_size = self._screen_size_getter()
-        rel_size = (0.6 / 4, 0.6 / 3)
+        rel_size = (0.5 / 4, 0.5 / 3)
         ret = []
         for i, coord in enumerate(('width', 'height')):
             abs_val = self._config.get('thumb.max.' + coord, of=int,
