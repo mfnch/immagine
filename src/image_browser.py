@@ -25,6 +25,7 @@ from .thumbnailers import build_empty_thumbnail
 from .orchestrator import Orchestrator, THUMBNAIL_DONE
 from .backcaller import BackCaller
 from .file_utils import FileList
+from .config import INT2
 
 
 class Location(object):
@@ -86,8 +87,8 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
 
     def _thumb_final_size_getter(self, parent=None, attr_name=None):
         cfg = self.config.get
-        min_x, min_y = cfg('thumb.min_abs_size', (32, 32))
-        scr_x, scr_y = cfg('screen.size', (1366, 768))
+        min_x, min_y = cfg('thumb.min_abs_size', (32, 32), INT2)
+        scr_x, scr_y = cfg('screen.size', (1366, 768), INT2)
         scale_exp = cfg('thumb.scale_exp', 0.0, float)
         scale_base = max(1.05, min(2.0, cfg('thumb.scale_base', 1.25, float)))
         scale = scale_base**scale_exp

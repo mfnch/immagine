@@ -33,6 +33,71 @@ def get_config():
         return Config()
 
 
+class TypeChecker(object):
+    '''Base class for checking types of configuration values.
+
+    Type checkers can be given to Config.get() to check the value which is
+    being retrieved from the configuration file. They should be given to the
+    `of` keyword argument like this:
+
+      v = cfg.get('a.b', of=TupleTypeChecker(2, float), default=(0, 0))
+
+    If the configuration a.b has not the correct type, then a warning message
+    is printed and the default value is returned.
+    '''
+
+    @staticmethod
+    def wrap(v):
+        if v is None:
+            return (lambda instance: None)
+        return (v if isinstance(v, TypeChecker) else PlainTypeChecker(v))
+
+    def __call__(self, instance):
+        return self.check(instance)
+
+
+class PlainTypeChecker(TypeChecker):
+    def __init__(self, expected_type, name=None):
+        self._expected_type = expected_type
+        self._name = name or expected_type.__name__
+        super(PlainTypeChecker, self).__init__()
+
+    def check(self, instance):
+        if isinstance(instance, self._expected_type):
+            return None
+        return 'not a {}'.format(self._name)
+
+
+class TupleTypeChecker(TypeChecker):
+    def __init__(self, of=None, size=None, min_size=None, max_size=None):
+        super(TupleTypeChecker, self).__init__()
+        self._of = of
+        self._min_size = (min_size if min_size is None else size)
+        self._max_size = (max_size if max_size is None else size)
+
+    def check(self, instance):
+        if not isinstance(instance, (tuple, list)):
+            return 'not a tuple'
+        n = len(instance)
+        if self._min_size is not None and n < self._min_size:
+            return ('tuple is too short (len should be >= {})'
+                    .format(self._min_size))
+        if self._max_size is not None and n > self._max_size:
+            return ('tuple is too long (len should be <= {})'
+                    .format(self._max_size))
+        checker = TypeChecker.wrap(self._of)
+        for i, item in enumerate(instance):
+            if checker(item) is not None:
+                return ('wrong type for tuple item at pos {}'.format(i))
+        return None
+
+
+# Common type checker.
+SCALAR = PlainTypeChecker((int, float), 'scalar')
+SCALAR2 = TupleTypeChecker(SCALAR, 2)
+INT2 = TupleTypeChecker(int, 2)
+
+
 class Config(object):
     @staticmethod
     def get_file_name():
@@ -118,10 +183,11 @@ class Config(object):
             if attrs is None:
                 return default
 
-        if (of is None or isinstance(attrs, of)):
+        checker = TypeChecker.wrap(of)
+        msg = checker(attrs)
+        if msg is None:
             return attrs
-
-        self._error('Invalid object for {}'.format(name))
+        self._error('Invalid object for {}: {}'.format(name, msg))
         return default
 
     def set(self, name, value):

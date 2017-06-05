@@ -29,7 +29,7 @@ from .viewer_tab import ViewerTab
 from .toolbar_window import ToolbarWindow
 from . import file_utils
 from .file_utils import FileList
-from .config import get_config
+from .config import get_config, SCALAR2
 
 def create_action_tuple(name=None, stock_id=None, label=None, accel=None,
                         tooltip=None, fn=None):
@@ -136,30 +136,28 @@ class ApplicationMainWindow(gtk.Window):
 
     def _get_window_size(self, min_size=(200, 200)):
         screen_size = self._screen_size_getter()
-        rel_size = (0.5, 0.8)
+        rel_val = self._config.get('window.rel_size', of=SCALAR2,
+                                   default=(0.5, 0.8))
+        abs_val = self._config.get('window.size', of=SCALAR2,
+                                   default=(None, None))
         ret = []
-        for i, coord in enumerate(('width', 'height')):
-            abs_val = self._config.get('window.size.' + coord,
-                                       of=int, default=None)
-            if abs_val is None:
-                rel_val = self._config.get('window.rel.' + coord, of=int,
-                                           default=rel_size[i])
-                abs_val = int(screen_size[i] * min(1.0, max(0.0, rel_val)))
-            ret.append(max(min_size[i], min(screen_size[i], abs_val)))
+        for i, v in enumerate(abs_val):
+            if v is None:
+                v = int(screen_size[i] * min(1.0, max(0.0, rel_val[i])))
+            ret.append(max(min_size[i], min(screen_size[i], v)))
         return tuple(ret)
 
     def _thumb_size_getter(self, parent=None, attr_name=None):
         screen_size = self._screen_size_getter()
-        rel_size = (0.5 / 4, 0.5 / 3)
+        rel_size = self._config.get('thumb.rel_size', of=SCALAR2,
+                                    default=(0.5 / 4, 0.5 / 3))
+        abs_val = self._config.get('thumb.max_size', of=SCALAR2,
+                                   default=(None, None))
         ret = []
-        for i, coord in enumerate(('width', 'height')):
-            abs_val = self._config.get('thumb.max.' + coord, of=int,
-                                       default=None)
-            if abs_val is None:
-                rel_val = self._config.get('thumb.rel.' + coord, of=float,
-                                           default=rel_size[i])
-                abs_val = int(screen_size[i] * min(1.0, max(0.0, rel_val)))
-            ret.append(max(5, abs_val))
+        for i, v in enumerate(abs_val):
+            if v is None:
+                v = int(screen_size[i] * min(1.0, max(0.0, rel_size[i])))
+            ret.append(max(5, v))
         return ret
 
     def change_layout(self):
