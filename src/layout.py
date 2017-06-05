@@ -178,7 +178,7 @@ class ImageAlbum(object):
         for row in self.get_rows(y, height):
             for image in row.images:
                 ix = image.pos[0]
-                if ix + image.size[0] >= x and ix < x_end:
+                if ix + image.size[0] - 1 >= x and ix < x_end:
                     images.append(image)
         return images
 
