@@ -15,6 +15,8 @@
 import gtk
 
 from .base_tab import BaseTab
+from .config import get_config, COLOR
+
 
 class ViewerTab(BaseTab):
     def __init__(self, image_path, file_list=None, file_index=None):
@@ -34,6 +36,7 @@ class ViewerTab(BaseTab):
                                         label_ellipsize_end=True,
                                         toggle_fullscreen=None,
                                         close_tab=None)
+        self._config = get_config()
         self.file_list = file_list
         self.file_index = file_index
         self.max_zoom = 4.0        # Maximum zoom factor.
@@ -49,7 +52,15 @@ class ViewerTab(BaseTab):
         eb.add(image)
 
         self.scrolled_window = sw = gtk.ScrolledWindow()
-        sw.add_with_viewport(eb)
+        vp = gtk.Viewport()
+        vp.add(eb)
+        sw.add(vp)
+
+        # Set color in the viewport around the picture.
+        color = self._config.get('viewer.bg_color', '#000', COLOR)
+        vp.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(color))
+        eb.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(color))
+
         self.pack_start(self.toolbar, expand=False)
         self.pack_start(sw)
 

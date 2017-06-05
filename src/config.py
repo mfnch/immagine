@@ -92,11 +92,26 @@ class TupleTypeChecker(TypeChecker):
         return None
 
 
+class ColorTypeChecker(TypeChecker):
+    '''Type checker for color with form #rrggbb where rgb are hex digits.'''
+
+    def __init__(self):
+        super(ColorTypeChecker, self).__init__()
+
+    def check(self, instance):
+        if (isinstance(instance, (str, unicode)) and len(instance) == 7 and
+            instance[0] == '#' and all(c in '0123456789abcdef'
+                                       for c in instance[1:].lower())):
+            return None
+        return ('invalid color (expecting "#rrggbb" where rgb are hex '
+                'digits for the red, green, blue components')
+
+
 # Common type checker.
 SCALAR = PlainTypeChecker((int, float), 'scalar')
 SCALAR2 = TupleTypeChecker(SCALAR, 2)
 INT2 = TupleTypeChecker(int, 2)
-
+COLOR = ColorTypeChecker()
 
 class Config(object):
     @staticmethod
