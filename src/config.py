@@ -21,6 +21,18 @@ import json
 
 from .version import version
 
+# Whether this is a development version of the app.
+is_dev_version = version.rsplit('.', 1)[-1].startswith('dev')
+
+# The main logger for the Immagine app.
+logging.basicConfig()
+logger = logging.getLogger('Immagine')
+
+def setup_logging(loglevel=None):
+    if loglevel is None:
+        loglevel = (logging.DEBUG if is_dev_version else logging.WARNING)
+    logger.setLevel(loglevel)
+
 def get_config():
     fp = Config.get_file_name()
     if not os.path.exists(fp):
@@ -30,8 +42,8 @@ def get_config():
             content = f.read()
         return Config(json.loads(content), file_name=fp)
     except Exception as exc:
-        logging.warn('Error while loading configuration from {}: {}'
-                     .format(fp, str(exc)))
+        logger.warn('Error while loading configuration from {}: {}'
+                    .format(fp, str(exc)))
         return Config()
 
 
@@ -158,14 +170,14 @@ class Config(object):
             with open(fn, 'w') as f:
                 f.write(out)
         except Exception as exc:
-            logging.warning('Cannot save configuration to {}: {}'
-                            .format(fn, str(exc)))
+            logger.error('Cannot save configuration to {}: {}'
+                         .format(fn, str(exc)))
 
     def _error(self, msg):
         if self._file_name is not None:
             msg = ('Error while reading {}: {}'
                    .format(self._file_name, msg))
-        logging.warning(msg)
+        logger.error(msg)
 
     def override(self, name, getter, setter=None):
         assert getter is not None or setter is not None

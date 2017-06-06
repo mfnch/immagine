@@ -29,7 +29,7 @@ from .viewer_tab import ViewerTab
 from .toolbar_window import ToolbarWindow
 from . import file_utils
 from .file_utils import FileList
-from .config import get_config, SCALAR2, version
+from .config import get_config, SCALAR2, version, setup_logging
 
 def create_action_tuple(name=None, stock_id=None, label=None, accel=None,
                         tooltip=None, fn=None):
@@ -434,6 +434,8 @@ class ApplicationMainWindow(gtk.Window):
 def main(args=None):
     args = args or sys.argv
     start_path = (args[1] if len(args) >= 2 else None)
+    setup_logging()
+
     gtk.gdk.threads_init()
     gtk.gdk.threads_enter()
     ApplicationMainWindow(start_path)

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-import logging
 
 import gobject
 import gtk
@@ -25,7 +24,7 @@ from .thumbnailers import build_empty_thumbnail
 from .orchestrator import Orchestrator, THUMBNAIL_DONE
 from .backcaller import BackCaller
 from .file_utils import FileList
-from .config import INT2
+from .config import logger, INT2
 
 
 class Location(object):
@@ -240,7 +239,7 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
             sx = x1 - x0
             sy = y1 - y0
             if sx <= 0 or sy <= 0:
-                logging.warning('Error: sx={}, sy={}'.format(sx, sy))
+                logger.debug('Error: sx={}, sy={}'.format(sx, sy))
                 continue
             buf_area = pixbuf.subpixbuf(x0 - x, y0 - y, sx, sy)
             rowstride = buf_area.get_rowstride()

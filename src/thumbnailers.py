@@ -19,6 +19,7 @@ import gtk
 
 from . import icons
 from .file_utils import choose_representatives
+from .config import logger
 
 def open_image(file_name, load=False):
     try:
@@ -44,8 +45,8 @@ def build_image_thumbnail(image_path, size, orig_size=None):
         return None
 
     if image.size != size:
-        print('got %s, required %s, %s'
-              % (image.size, size, orig_size))
+        logger.debug('got {}, required {}, {}'
+                     .format(image.size, size, orig_size))
 
     if image.mode != 'RGB':
         image = image.convert('RGBA')
