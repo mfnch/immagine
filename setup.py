@@ -17,13 +17,16 @@
 import os
 from setuptools import setup
 
+from src.version import version
+
+
 script_path = os.path.abspath(os.path.dirname(__file__))
 readme_path = os.path.join(script_path, 'README.rst')
 with open(readme_path, 'r') as f:
     long_description = f.read()
 
 setup(name='immagine',
-      version='0.6.dev0',
+      version=version,
       description='Image viewer and browser with directory thumbnails',
       long_description=long_description,
       author='Matteo Franchin',

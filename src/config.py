@@ -19,6 +19,8 @@ import sys
 import logging
 import json
 
+from .version import version
+
 def get_config():
     fp = Config.get_file_name()
     if not os.path.exists(fp):

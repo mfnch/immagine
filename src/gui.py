@@ -29,7 +29,7 @@ from .viewer_tab import ViewerTab
 from .toolbar_window import ToolbarWindow
 from . import file_utils
 from .file_utils import FileList
-from .config import get_config, SCALAR2
+from .config import get_config, SCALAR2, version
 
 def create_action_tuple(name=None, stock_id=None, label=None, accel=None,
                         tooltip=None, fn=None):
@@ -346,7 +346,7 @@ class ApplicationMainWindow(gtk.Window):
 
     def about_action(self, action):
         dialog = gtk.AboutDialog()
-        dialog.set_name('Immagine Image Viewer')
+        dialog.set_name('Immagine {}'.format(version))
         dialog.set_copyright('\302\251 Copyright 2016, 2017 Matteo Franchin')
         dialog.set_website('https://github.com/mfnch/immagine')
         dialog.connect('response', lambda d, r: d.destroy())
