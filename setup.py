@@ -17,16 +17,18 @@
 import os
 from setuptools import setup
 
-from src.version import version
+# Get app information from version file.
+info = {}
+root_dir = os.path.dirname(os.path.realpath(__file__))
+execfile(os.path.join(root_dir, 'src', 'version.py'), info)
 
-
-script_path = os.path.abspath(os.path.dirname(__file__))
-readme_path = os.path.join(script_path, 'README.rst')
+# Read description from README.rst.
+readme_path = os.path.join(root_dir, 'README.rst')
 with open(readme_path, 'r') as f:
     long_description = f.read()
 
 setup(name='immagine',
-      version=version,
+      version=info['version'],
       description='Image viewer and browser with directory thumbnails',
       long_description=long_description,
       author='Matteo Franchin',
