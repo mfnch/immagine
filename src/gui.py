@@ -52,7 +52,7 @@ def create_radio_tuple(name=None, stock_id=None, label=None, accel=None,
 class ApplicationMainWindow(gtk.Window):
     application_name = 'Immagine image viewer'
 
-    def __init__(self, start_path, parent=None):
+    def __init__(self, start_path, image_paths=[], parent=None):
         super(ApplicationMainWindow, self).__init__()
         self.fullscreen_widget = None
         self.fullscreen_toolbar = ToolbarWindow()
@@ -99,22 +99,11 @@ class ApplicationMainWindow(gtk.Window):
         nb.set_scrollable(True)
         nb.set_tab_pos(gtk.POS_TOP)
 
-        # When given a directory open a browsing tab. When given a file open
-        # the parent directory and the file in two separate tabs.
-        start_file = None
-        if start_path is None:
-            start_dir = os.getcwd()
-        elif os.path.isdir(start_path):
-            start_dir = start_path
-        else:
-            start_dir = os.path.dirname(start_path) or os.getcwd()
-            if not os.path.isdir(start_dir):
-                start_dir = os.getcwd()
-            elif os.path.exists(start_path):
-                start_file = os.path.split(start_path)[1]
-        self.browser_tab = self.open_tab(start_dir)
-        if start_file is not None:
-            self.open_tab(start_file)
+        # One a browsing tab for the given directory and one viewer tab for
+        # each given image.
+        self.browser_tab = self.open_tab(start_path)
+        for image_path in image_paths:
+            self.open_tab(image_path)
 
         # Place menu and notebook in a VBox. Add this to the window.
         self.window_content = vbox = gtk.VBox()
@@ -458,11 +447,22 @@ def main(args=None):
             if dir_path is not None:
                 logger.warn('Ignoring argument {}'.format(dir_path))
             dir_path = path
-        else:
+        elif os.path.exists(path):
             img_paths.append(path)
+        else:
+            logger.warn('Ignoring argument {}'.format(path))
+
+    # If a directory was not provided, take the directory of the first image.
+    if dir_path is None:
+        if img_paths:
+            dir_path = os.path.dirname(img_paths[0])
+
+    if dir_path is None or not os.path.isdir(dir_path):
+        dir_path = os.getcwd()
+
+    dir_path = os.path.realpath(dir_path)
 
     gtk.gdk.threads_init()
-    gtk.gdk.threads_enter()
-    ApplicationMainWindow(dir_path)
-    gtk.main()
-    gtk.gdk.threads_leave()
+    with gtk.gdk.lock:
+        ApplicationMainWindow(dir_path, img_paths)
+        gtk.main()
