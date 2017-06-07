@@ -18,6 +18,8 @@
 
 import os
 import sys
+import argparse
+import logging
 
 import pygtk
 pygtk.require('2.0')
@@ -29,7 +31,7 @@ from .viewer_tab import ViewerTab
 from .toolbar_window import ToolbarWindow
 from . import file_utils
 from .file_utils import FileList
-from .config import get_config, SCALAR2, version, setup_logging
+from .config import get_config, setup_logging, logger, version, SCALAR2
 
 def create_action_tuple(name=None, stock_id=None, label=None, accel=None,
                         tooltip=None, fn=None):
@@ -432,12 +434,35 @@ class ApplicationMainWindow(gtk.Window):
 
 
 def main(args=None):
-    args = args or sys.argv
-    start_path = (args[1] if len(args) >= 2 else None)
-    setup_logging()
+    dsc = ('Immagine {} - image viewer with focus on the browsing experience'
+           .format(version))
+    parser = argparse.ArgumentParser(description=dsc)
+    parser.add_argument('paths', metavar='PATH', type=str, nargs='*',
+                        help=('Path to file or directory. All paths to files '
+                              'are handled by opening a viewer tab. Only one '
+                              'directory path should be provided and is used '
+                              'as the initial browsing directory.'))
+    parser.add_argument('-l', '--log', metavar='LEVEL', dest='loglevel',
+                        choices=['DEBUG', 'WARN', 'ERROR', 'SILENT'],
+                        default=None,
+                        help='Log level. One of: DEBUG, WARN, ERROR, SILENT.')
+
+    args = parser.parse_args()
+
+    setup_logging(args.loglevel)
+
+    img_paths = []
+    dir_path = None
+    for path in args.paths:
+        if os.path.isdir(path):
+            if dir_path is not None:
+                logger.warn('Ignoring argument {}'.format(dir_path))
+            dir_path = path
+        else:
+            img_paths.append(path)
 
     gtk.gdk.threads_init()
     gtk.gdk.threads_enter()
-    ApplicationMainWindow(start_path)
+    ApplicationMainWindow(dir_path)
     gtk.main()
     gtk.gdk.threads_leave()

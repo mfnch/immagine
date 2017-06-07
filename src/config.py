@@ -30,8 +30,15 @@ logger = logging.getLogger('Immagine')
 
 def setup_logging(loglevel=None):
     if loglevel is None:
-        loglevel = (logging.DEBUG if is_dev_version else logging.WARNING)
-    logger.setLevel(loglevel)
+        ll = (logging.DEBUG if is_dev_version else logging.WARNING)
+    else:
+        loglevel = loglevel.upper()
+        if loglevel == 'SILENT':
+            # Disable all logging.
+            logging.disable(logging.CRITICAL)
+            return
+        ll = getattr(logging, loglevel, logging.WARN)
+    logger.setLevel(ll)
 
 def get_config():
     fp = Config.get_file_name()
@@ -42,8 +49,8 @@ def get_config():
             content = f.read()
         return Config(json.loads(content), file_name=fp)
     except Exception as exc:
-        logger.warn('Error while loading configuration from {}: {}'
-                    .format(fp, str(exc)))
+        logger.error('Cannot load configuration from {}: {}'
+                     .format(fp, str(exc)))
         return Config()
 
 
