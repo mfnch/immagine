@@ -40,19 +40,6 @@ def setup_logging(loglevel=None):
         ll = getattr(logging, loglevel, logging.WARN)
     logger.setLevel(ll)
 
-def get_config():
-    fp = Config.get_file_name()
-    if not os.path.exists(fp):
-        return Config()
-    try:
-        with open(fp, 'r') as f:
-            content = f.read()
-        return Config(json.loads(content), file_name=fp)
-    except Exception as exc:
-        logger.error('Cannot load configuration from {}: {}'
-                     .format(fp, str(exc)))
-        return Config()
-
 
 class TypeChecker(object):
     '''Base class for checking types of configuration values.
@@ -134,6 +121,7 @@ SCALAR2 = TupleTypeChecker(SCALAR, 2)
 INT2 = TupleTypeChecker(int, 2)
 COLOR = ColorTypeChecker()
 
+
 class Config(object):
     @staticmethod
     def get_file_name():
@@ -148,10 +136,24 @@ class Config(object):
         raise TypeError('Unexpected keyword arguments {}'
                         .format(', '.join(kwargs.keys())))
 
-    def __init__(self, config_dict=None, file_name=None):
-        self._file_name = file_name
-        self._config_dict = config_dict or {}
+    def __init__(self):
+        self._file_name = self.get_file_name()
+        self._config_dict = {}
         self._override_dict = {}
+
+    def load(self, file_name=None):
+        fn = file_name or Config.get_file_name()
+        try:
+            with open(fn, 'r') as f:
+                content = f.read()
+            config_dict = json.loads(content)
+        except Exception as exc:
+            logger.error('Cannot load configuration from {}: {}'
+                         .format(fn, str(exc)))
+            return
+
+        self._file_name = file_name
+        self._config_dict = config_dict
 
     def _build_config_dict(self, attrs, name=()):
         out = {}

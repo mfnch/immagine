@@ -31,7 +31,7 @@ from .viewer_tab import ViewerTab
 from .toolbar_window import ToolbarWindow
 from . import file_utils
 from .file_utils import FileList
-from .config import get_config, setup_logging, logger, version, SCALAR2
+from .config import Config, setup_logging, logger, version, SCALAR2
 
 def create_action_tuple(name=None, stock_id=None, label=None, accel=None,
                         tooltip=None, fn=None):
@@ -52,12 +52,13 @@ def create_radio_tuple(name=None, stock_id=None, label=None, accel=None,
 class ApplicationMainWindow(gtk.Window):
     application_name = 'Immagine image viewer'
 
-    def __init__(self, start_path, image_paths=[], parent=None):
+    def __init__(self, start_path, image_paths=[],
+                 parent=None, config=None):
         super(ApplicationMainWindow, self).__init__()
         self.fullscreen_widget = None
         self.fullscreen_toolbar = ToolbarWindow()
         self.open_dialog = None
-        self._config = get_config()
+        self._config = config or Config()
 
         self.sort_type = FileList.SORT_BY_MOD_DATE
 
@@ -319,7 +320,7 @@ class ApplicationMainWindow(gtk.Window):
 
     def open_viewer_tab(self, path, **kwargs):
         '''Create a new ViewerTab to view the image at the given path.'''
-        vt = ViewerTab(path, **kwargs)
+        vt = ViewerTab(path, config=self._config, **kwargs)
         vt.set_callback('close_tab', self.on_close_tab)
         vt.set_callback('toggle_fullscreen', self.fullscreen_action)
         vt.show_all()
@@ -439,6 +440,8 @@ def main(args=None):
     args = parser.parse_args()
 
     setup_logging(args.loglevel)
+    cfg = Config()
+    cfg.load()
 
     img_paths = []
     dir_path = None
@@ -464,5 +467,5 @@ def main(args=None):
 
     gtk.gdk.threads_init()
     with gtk.gdk.lock:
-        ApplicationMainWindow(dir_path, img_paths)
+        ApplicationMainWindow(dir_path, img_paths, config=cfg)
         gtk.main()

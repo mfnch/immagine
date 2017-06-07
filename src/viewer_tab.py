@@ -15,11 +15,12 @@
 import gtk
 
 from .base_tab import BaseTab
-from .config import get_config, COLOR
+from .config import Config, COLOR
 
 
 class ViewerTab(BaseTab):
-    def __init__(self, image_path, file_list=None, file_index=None):
+    def __init__(self, image_path, file_list=None, file_index=None,
+                 config=None):
         toolbar_desc = \
          ((gtk.STOCK_ZOOM_IN, 'Zoom in', 'zoom_in'),
           (gtk.STOCK_ZOOM_FIT, 'Zoom to fit', 'zoom_fit'),
@@ -36,7 +37,7 @@ class ViewerTab(BaseTab):
                                         label_ellipsize_end=True,
                                         toggle_fullscreen=None,
                                         close_tab=None)
-        self._config = get_config()
+        self._config = config or Config()
         self.file_list = file_list
         self.file_index = file_index
         self.max_zoom = 4.0        # Maximum zoom factor.
