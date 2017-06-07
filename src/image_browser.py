@@ -215,7 +215,9 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
     def on_thumbnail_available(self, *args):
         '''Called by the orchestrator when thumbnails become available.'''
 
-        self.queue_draw()
+        # As this function is called by a separate thread, we take the lock.
+        with gtk.gdk.lock:
+            self.queue_draw()
 
     def on_expose_event(self, draw_area, event):
         '''Function responsible for the rendering of the widget.'''
