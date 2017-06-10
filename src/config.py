@@ -143,6 +143,10 @@ class Config(object):
 
     def load(self, file_name=None):
         fn = file_name or Config.get_file_name()
+        if not os.path.exists(fn):
+            logger.debug('File {} not found'.format(fn))
+            return
+
         try:
             with open(fn, 'r') as f:
                 content = f.read()
