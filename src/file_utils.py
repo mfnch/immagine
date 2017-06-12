@@ -80,9 +80,12 @@ class FileList(object):
 
 image_file_extensions = ('.jpeg', '.jpg', '.png', '.tif', '.xpm', '.bmp')
 
-def list_dir(directory_path):
+def list_dir(directory_path, check_cancelled=None):
     '''Return the files in the directory or an empty list if the directory
     access fails.'''
+
+    if check_cancelled is not None and check_cancelled():
+        return []
 
     assert isinstance(directory_path, str)
     try:
@@ -91,7 +94,7 @@ def list_dir(directory_path):
         return []
     return [os.path.join(directory_path, entry) for entry in entries]
 
-def get_files_in_dir(directory_path, **kwargs):
+def get_files_in_dir(directory_path, check_cancelled=None, **kwargs):
     '''Return tuples (isdir, full_path) where isdir is a boolean indicating
     whether the item is a directory and full_path is the path to it.
     The following keyword arguments can be used:
@@ -105,7 +108,7 @@ def get_files_in_dir(directory_path, **kwargs):
     `reversed_sort`: whether the sort order should be reversed. Default order
       is from smaller to bigger.
     '''
-    return categorize_files(list_dir(directory_path), **kwargs)
+    return categorize_files(list_dir(directory_path, check_cancelled), **kwargs)
 
 def is_hidden(full_path):
     '''Whether the given file is hidden.'''
@@ -165,11 +168,12 @@ def pick_file_from_dir(directory_path, out_list, file_extensions=None,
             return True
     return False
 
-def choose_representatives(directory_path, num=4, **kwargs):
+def choose_representatives(directory_path, num=4, check_cancelled=None,
+                           **kwargs):
     if num < 1:
         return []
 
-    file_list = list_dir(directory_path)
+    file_list = list_dir(directory_path, check_cancelled)
     all_entries = categorize_files(file_list, **kwargs)
     all_dirs = [entry for is_dir, entry in all_entries if is_dir]
     all_images = [entry for is_dir, entry in all_entries if not is_dir]
@@ -199,7 +203,9 @@ def choose_representatives(directory_path, num=4, **kwargs):
             index = index % len(all_dirs)
             candidate_dir = all_dirs.pop(index)
             index += step
-            if (pick_file_from_dir(candidate_dir, out, **kwargs) and
+            if (pick_file_from_dir(candidate_dir, out,
+                                   check_cancelled=check_cancelled,
+                                   **kwargs) and
                 len(out) >= num):
                 return out
 

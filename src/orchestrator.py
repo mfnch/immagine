@@ -51,19 +51,25 @@ class Thumbnail(object):
         # TODO: For now we tolerate slight errors in the resize.
         return size[0] == self.size[0] or size[1] == self.size[1]
 
+
 class Worker(Process):
     def __init__(self, cmd_queue, out_queue):
+        super(Worker, self).__init__()
+
+        # Queues used to coordinate work with other threads.
         self.cmd_queue = cmd_queue
         self.out_queue = out_queue
+
+        # Private datastructures always accessed from the same thread.
         self.local_queue = []
         self.idx_from_req = {}
-        super(Worker, self).__init__()
+        self.current_request_id = None
 
     def run(self):
         '''The main worker loop.'''
 
         while True:
-            # Move all items from cmd_queu to local queue.
+            # Move all items from cmd_queue to local queue.
             # Block during get if the local queue is empty.
             comment('Move work to local queue')
             if self.move_work_to_local_queue():
@@ -74,7 +80,7 @@ class Worker(Process):
             if len(self.local_queue) > 0:
                 self.process_item_from_local_queue()
 
-    def move_work_to_local_queue(self):
+    def move_work_to_local_queue(self, blocking=True):
         '''Move all commands to the local queue (in reverse order).
 
         Also handle the queue management commands (CLEARQ, ...).
@@ -87,21 +93,26 @@ class Worker(Process):
         while True:
             # If the local queue is empty, then block the get() on cmd_queue,
             # as there is no work we could do anyway.
-            block = (len(local_queue) == 0)
+            queue_empty = (len(local_queue) == 0)
 
             try:
-                args = self.cmd_queue.get(block)
+                args = self.cmd_queue.get(blocking and queue_empty)
             except Empty:
                 return False
             else:
-                cmd  = args[0]
-                if cmd == 'STOP':
-                    # Exit the worker process.
-                    return True
-                if cmd == 'CLEARQ':
+                cmd = args[0]
+                if cmd == 'MAKETHUMB':
+                    # Queue the MAKETHUMB command in the local queue. The
+                    # order is reversed (most recent request are dealt with
+                    # first).
+                    request_id = args[1]
+                    idx_from_req[request_id] = len(local_queue)
+                    local_queue.append(args)
+                elif cmd == 'CLEARQ':
                     # Clear all jobs queued before this command.
                     self.local_queue = local_queue = []
                     self.idx_from_req = idx_from_req = {}
+                    self.current_request_id = None
                 elif cmd == 'CANCEL':
                     # Cancel a MAKETHUMB command in the queue.
                     request_id = args[1]
@@ -111,14 +122,19 @@ class Worker(Process):
                     else:
                         comment('CANCEL: Cannot find request {}'
                                 .format(request_id))
+                    # Cancel the current thumb creation, if necessary.
+                    if self.current_request_id == request_id:
+                        self.current_request_id = None
                 else:
-                    assert cmd == 'MAKETHUMB', 'Unknown command {}'.format(cmd)
-                    # Queue the MAKETHUMB command in the local queue. The
-                    # order is reversed (most recent request are dealt with
-                    # first).
-                    request_id = args[1]
-                    idx_from_req[request_id] = len(local_queue)
-                    local_queue.append(args)
+                    # Exit the worker process.
+                    assert cmd == 'STOP', 'Unknown command {}'.format(cmd)
+                    return True
+
+    def check_thumb_cancelled(self):
+        '''Return whether the current thumbnail creation should be cancelled.
+        '''
+        self.move_work_to_local_queue(blocking=False)
+        return (self.current_request_id is None)
 
     def process_item_from_local_queue(self):
         '''Process one item in the local queue and remove it.'''
@@ -126,7 +142,6 @@ class Worker(Process):
         # Remove the top command from local_queue and idx_from_req map.
         # NOP commands are removed and ignored.
         while len(self.local_queue) > 0:
-            idx_from_req = self.idx_from_req
             args = self.local_queue.pop()
             if args[0] != 'NOP':
                 assert args[0] == 'MAKETHUMB'
@@ -135,20 +150,25 @@ class Worker(Process):
 
                 comment('Received MAKETHUMB command with ID {}'
                         .format(request_id))
-                state, data = self.make_thumb(file_name, size)
-
+                self.current_request_id = request_id
+                state, data = \
+                  self.make_thumb(file_name, size,
+                                  check_cancelled=self.check_thumb_cancelled)
+                if self.check_thumb_cancelled():
+                    return
                 comment('MAKETHUMB processed: sending result')
                 self.out_queue.put(('MAKETHUMB', file_name, size, request_id,
                                     state, data))
                 return
 
-    def make_thumb(self, file_name, size):
+    def make_thumb(self, file_name, size, **kwargs):
         if os.path.isdir(file_name):
-            arr = build_directory_thumbnail(file_name, size)
+            arr = build_directory_thumbnail(file_name, size, **kwargs)
         else:
             arr = build_image_thumbnail(file_name, size)
         state = (THUMBNAIL_DONE if arr is not None else THUMBNAIL_DAMAGED)
         return (state, arr)
+
 
 def listener_main(orchestrator):
     '''Listener thread main loop.

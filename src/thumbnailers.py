@@ -55,12 +55,13 @@ def build_image_thumbnail(image_path, size, orig_size=None):
 
     return numpy.array(image)
 
-def build_directory_thumbnail(dir_path, size, orig_size=None):
+def build_directory_thumbnail(dir_path, size, orig_size=None,
+                              check_cancelled=None):
     tx, ty = (100, 100)
     thumbnail_aspect = float(tx)/ty
     scale_factor = (float(size[0])/tx if thumbnail_aspect > 1.0
                     else float(size[1])/ty)
-    images = choose_representatives(dir_path)
+    images = choose_representatives(dir_path, check_cancelled=check_cancelled)
     if len(images) == 0:
         dir_name = os.path.split(dir_path)[-1]
         return icons.generate_text_icon(dir_name, size, cache=True)
