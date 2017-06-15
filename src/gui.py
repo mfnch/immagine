@@ -83,12 +83,13 @@ class ApplicationMainWindow(gtk.Window):
         cfg = self._config
         cfg.override('thumb.size', self._thumb_size_getter)
         cfg.override('screen.size', self._screen_size_getter)
-        toggle = ui_manager.get_widget('/MenuBar/ViewMenu/ShowHidden')
+        hide_toggle = ui_manager.get_widget('/MenuBar/ViewMenu/ShowHidden')
         cfg.override('browser.show_hidden_files',
-                     lambda *args: toggle.get_active())
-        toggle = ui_manager.get_widget('/MenuBar/ViewMenu/ReverseSortOrder')
+                     lambda *args: hide_toggle.get_active())
+        reverse_toggle = \
+          ui_manager.get_widget('/MenuBar/ViewMenu/ReverseSortOrder')
         cfg.override('browser.reversed_sort',
-                     lambda *args: toggle.get_active())
+                     lambda *args: reverse_toggle.get_active())
         cfg.override('browser.sort_type', lambda *args: self.sort_type)
 
         # The menu is shared across all tabs.
