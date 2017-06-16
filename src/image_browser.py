@@ -24,7 +24,7 @@ from .thumbnailers import build_empty_thumbnail
 from .orchestrator import Orchestrator, THUMBNAIL_DONE
 from .backcaller import BackCaller
 from .file_utils import FileList
-from .config import logger, INT2
+from .config import logger, INT2, COLOR
 
 
 class Location(object):
@@ -46,8 +46,9 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
                             image_clicked=None)
         gtk.DrawingArea.__init__(self)
 
-        self.config = cfg = config
-        cfg.override('thumb.final_size', self._thumb_final_size_getter)
+        assert config is not None
+        self._config = config
+        config.override('thumb.final_size', self._thumb_final_size_getter)
 
         # Directory this object is browsing.
         self.location = Location(start_dir)
@@ -85,13 +86,14 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         self.connect('query-tooltip', self.on_query_tooltip)
 
     def _thumb_final_size_getter(self, parent=None, attr_name=None):
-        cfg = self.config.get
-        min_x, min_y = cfg('thumb.min_abs_size', (32, 32), INT2)
-        scr_x, scr_y = cfg('screen.size', (1366, 768), INT2)
-        scale_exp = cfg('thumb.scale_exp', 0.0, float)
-        scale_base = max(1.05, min(2.0, cfg('thumb.scale_base', 1.25, float)))
-        scale = scale_base**scale_exp
-        thumb_x, thumb_y = cfg('thumb.size')
+        cfg = self._config
+        min_x, min_y = cfg.get('thumb.min_abs_size', (32, 32), INT2)
+        scr_x, scr_y = cfg.get('screen.size', (1366, 768), INT2)
+        scale_exp = cfg.get('thumb.scale_exp', 0.0, float)
+        scale_base = cfg.get('thumb.scale_base', 1.25, float)
+        scale_base_adjusted = max(1.05, min(2.0, scale_base))
+        scale = scale_base_adjusted**scale_exp
+        thumb_x, thumb_y = cfg.get('thumb.size')
         return (int(max(min_x, min(scr_x // 2, thumb_x*scale))),
                 int(max(min_y, min(scr_y // 2, thumb_y*scale))))
 
@@ -115,17 +117,19 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
             width, _ = self.window.get_size()
 
         # Create the file list based on the current configuration.
-        cfg = self.config.get
+        cfg = self._config
         self.file_list = file_list = \
-          FileList(self.location.path,
-                   show_hidden_files=cfg('browser.show_hidden_files', True),
-                   reversed_sort=cfg('browser.reversed_sort', False),
-                   sort_type=cfg('browser.sort_type', FileList.SORT_BY_MOD_DATE))
+          FileList(
+            self.location.path,
+            show_hidden_files=cfg.get('browser.show_hidden_files', True),
+            reversed_sort=cfg.get('browser.reversed_sort', False),
+            sort_type=cfg.get('browser.sort_type', FileList.SORT_BY_MOD_DATE)
+          )
 
         self.album = layout.ImageAlbum(file_list,
                                        max_width=width,
-                                       max_size=cfg('thumb.final_size'),
-                                       border=cfg('thumb.border', (5, 5)))
+                                       max_size=cfg.get('thumb.final_size'),
+                                       border=cfg.get('thumb.border', (5, 5)))
 
     def scroll_adjustment(self, hadjustment, vadjustment):
         self._hadjustment = hadjustment
@@ -208,7 +212,10 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
             return \
               gtk.gdk.pixbuf_new_from_array(tn.data, gtk.gdk.COLORSPACE_RGB, 8)
         text = 'Loading...\n' + os.path.split(file_item.name)[-1]
+        loading_icon_color = \
+          self._config.get_color_triple('thumb.color.loading', '#ff0000')
         return icons.generate_text_icon(text, thumbnail.size, cache=True,
+                                        color=loading_icon_color,
                                         out_format=icons.FORMAT_PIXBUF)
         return build_empty_thumbnail(thumbnail.size)
 
@@ -359,15 +366,16 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
 
     def zoom(self, new_exp, relative=True):
         '''Change the scale exponent used to scale thumbnails.'''
-        prev_scale_exp = self.config.get('thumb.scale_exp', 0.0, float)
+        cfg = self._config
+        prev_scale_exp = cfg.get('thumb.scale_exp', 0.0, float)
         scale_exp = (prev_scale_exp if relative else 0.0) + new_exp
-        prev_size = self.config.get('thumb.final_size')
-        self.config.set('thumb.scale_exp', scale_exp)
-        new_size = self.config.get('thumb.final_size')
+        prev_size = cfg.get('thumb.final_size')
+        cfg.set('thumb.scale_exp', scale_exp)
+        new_size = cfg.get('thumb.final_size')
         if new_size[0] == prev_size[0] or new_size[1] == prev_size[1]:
-            # Scale had no effect: maybe scale is too small or too big. Restore
-            # previous scale exponent and quit.
-            self.config.set('thumb.scale_exp', prev_scale_exp)
+            # Scale had no effect: maybe scale is too small or too big.
+            # Restore previous scale exponent and quit.
+            cfg.set('thumb.scale_exp', prev_scale_exp)
             return
         self.update_album()
 

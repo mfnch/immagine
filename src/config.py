@@ -245,3 +245,12 @@ class Config(object):
                 attrs[arg] = value
                 return
             attrs = attrs.setdefault(arg, {})
+
+    def get_color_triple(self, name, default=None, max_value=255.0):
+        color_str = self.get(name, default, COLOR)
+        if color_str is None:
+            return color_str
+        r = int(color_str[1:3], 16) / max_value
+        g = int(color_str[3:5], 16) / max_value
+        b = int(color_str[5:7], 16) / max_value
+        return (r, g, b)

@@ -47,9 +47,11 @@ class Icon(object):
 
 
 class TextIcon(Icon):
-    def __init__(self, text, *args):
+    def __init__(self, text, color, *args):
         super(TextIcon, self).__init__(*args)
         self.text = text
+        self.color = color
+        assert len(color) == 3, 'color should be a triple of float'
 
     def draw(self):
         ctx = self.context
@@ -77,18 +79,19 @@ class TextIcon(Icon):
 
         layout.set_text(self.text)
         lg = cairo.LinearGradient(0, 0, self.width / scale_factor, 0)
-        lg.add_color_stop_rgba( 0.0, 0.0, 0.0, 0.0, 0.0)
-        lg.add_color_stop_rgba(0.05, 0.0, 0.0, 0.0, 1.0)
-        lg.add_color_stop_rgba(0.95, 0.0, 0.0, 0.0, 1.0)
-        lg.add_color_stop_rgba( 1.0, 0.0, 0.0, 0.0, 0.0)
+        r, g, b = self.color
+        lg.add_color_stop_rgba( 0.0, r, g, b, 0.0)
+        lg.add_color_stop_rgba(0.05, r, g, b, 1.0)
+        lg.add_color_stop_rgba(0.95, r, g, b, 1.0)
+        lg.add_color_stop_rgba( 1.0, r, g, b, 0.0)
         ctx.set_source(lg)
 
         pangocairo_context.update_layout(layout)
         pangocairo_context.show_layout(layout)
 
 
-def generate_text_icon(text, size, cache=False,
+def generate_text_icon(text, size, cache=False, color=(0, 0, 0),
                        out_format=FORMAT_ARRAY):
-    icon = TextIcon(text, size, out_format)
+    icon = TextIcon(text, color, size, out_format)
     icon.draw()
     return icon.get_out_data()
