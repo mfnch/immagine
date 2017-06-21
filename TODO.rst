@@ -17,8 +17,6 @@ Browsing part
 - [RB] Fix visualisation of small images (images for which the thumbnail is
   not smaller).
 
-- [RB] Fix directory thumbnail for (transparent?) PNG (they appear white).
-
 - [R] Remember sorting preferences.
 
 - [RB] Recalculate browsing position when re-sorting, etc.
@@ -44,3 +42,5 @@ Browsing part
 -------------
 
 - [R] Rewrite directory thumbnail generation algorithm.
+
+- [RB] Fix directory thumbnail for (transparent?) PNG (they appear white).
