@@ -108,6 +108,10 @@ def get_files_in_dir(directory_path, check_cancelled=None, **kwargs):
 
     `reversed_sort`: whether the sort order should be reversed. Default order
       is from smaller to bigger.
+
+    `out`: dict-like object. Of provided, this is populated with extra
+      statistics from the search. The following fields are written:
+      out['num_skipped'] number of files ignored due to their extension.
     '''
     return categorize_files(list_dir(directory_path, check_cancelled), **kwargs)
 
@@ -116,26 +120,33 @@ def is_hidden(full_path):
     return os.path.split(full_path)[-1].startswith('.')
 
 def categorize_files(file_list, file_extensions=None, sort_type=None,
-                     reversed_sort=False, show_hidden_files=True):
+                     reversed_sort=False, show_hidden_files=True, out=None):
     '''Similar to get_files_in_dir, but uses the files in the list given as
     first argument, rather than obtaining the file list from a directory path.
     '''
 
     exts = file_extensions or image_file_extensions
     isdir_file_tuples = []
+    num_skipped = 0
     for full_path in file_list:
         if not show_hidden_files and is_hidden(full_path):
             continue
 
         if not os.path.exists(full_path):
+            num_skipped += 1
             continue
 
         isdir = os.path.isdir(full_path)
         if not isdir:
             ext = os.path.splitext(full_path)[1]
             if ext.lower() not in exts:
+                num_skipped += 1
                 continue
         isdir_file_tuples.append((isdir, full_path))
+
+    # Return extra output if required.
+    if out is not None:
+        out['num_skipped'] = num_skipped
 
     # For now we only provide one sort type. Later we may want to provide a
     # tuple of sort types from the one which has the higher precedence to the
@@ -238,18 +249,34 @@ def sparse_iterator(items, num_steps):
         idx += len(items) // num_steps
 
 
-def pick_files(path, num_picks=4, follow_links=False, **kwargs):
+def pick_files(path, num_picks=4, follow_links=False,
+               dig_stability=2, dig_strength=10, **kwargs):
     '''Traverse the `path` and its subdirectories with the aim of picking
     `num_picks` files as sparsely as possible. `follow_links` decides whether
     symlinks should be followed or ignored in the directory traversal.
     Keyword arguments in `kwargs` are passed to `get_files_in_dir` and can
     be used to restrict the file extensions, provide a cancel check, decide
-    the sort order or whether hidden files should be ignored or not.
+    the sort order or decide whether hidden files should be ignored or not.
+
+    `dig_strength` determines how deep the search for images should be. A big
+    value (e.g. 15 or 20) causes the function to search deep into the
+    subdirectories, even when the parent directories contain files which are
+    not images. A small value (e.g. 2 or 5) causes the function to stop when
+    looking into directories that contain mostly files that are not images.
+    `dig_stability` decides how stable the directory evaluation should be.
+    When this is zero a directory containing many subdirectories but one
+    single file will be skipped if the file is not an image. Increasing
+    `dig_stability` can counteract this. A big value (e.g. 10) will cause a
+    directory to be skipped only when it contains many files and enough of
+    these are not images.
     '''
 
+    assert dig_stability >= 1
+    assert dig_strength >= 1
+
     # We try to pick one file per location, but if we don't find more files
-    # in other locations we may go back to these locations from which we
-    # picked some files already.
+    # in other locations we may go back to locations from which we picked
+    # some files already. We use this queue to remember those.
     remaining_file_iters = deque()
 
     # visited_already ensures we don't end up following circular symlinks.
@@ -258,13 +285,18 @@ def pick_files(path, num_picks=4, follow_links=False, **kwargs):
     # Do a breadth first search starting from the given directory.
     paths_to_visit = deque()
     if os.path.isdir(path):
-        paths_to_visit.append(path)
+        paths_to_visit.append((0, path))
 
     while paths_to_visit:
-        p = paths_to_visit.popleft()
-        entries = get_files_in_dir(p, **kwargs)
+        score, p = paths_to_visit.popleft()
+        out = {}
+        entries = get_files_in_dir(p, out=out, **kwargs)
+        n = out['num_skipped']
         files = [name for is_dir, name in entries if not is_dir]
         dirs = [name for is_dir, name in entries if is_dir]
+
+        # Update the score for this directory.
+        score += (10 * n + dig_stability) // (len(files) + dig_stability)
 
         # Pick one file from this location and save the iterator in case we
         # later needs to pick more files.
@@ -274,13 +306,17 @@ def pick_files(path, num_picks=4, follow_links=False, **kwargs):
             yield candidate
         remaining_file_iters.append(file_iter)
 
+        # Skip subdirectories if this directory's score is above the threshold.
+        if score > dig_strength:
+            continue
+
         # Append other directories in a sparse order so that we can continue
         # to explore the hierarchy.
         for dir_name in sparse_iterator(dirs, num_picks):
             rp = os.path.realpath(dir_name)
             if rp not in visited_already:
                 if rp == dir_name or follow_links:
-                    paths_to_visit.append(dir_name)
+                    paths_to_visit.append((score, dir_name))
                     visited_already.add(rp)
 
     # We get here when we didn't manage to pick all the files from different
