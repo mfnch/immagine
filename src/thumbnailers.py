@@ -18,7 +18,7 @@ import PIL.Image
 import gtk
 
 from . import icons
-from .file_utils import choose_representatives
+from .file_utils import pick_files
 from .config import logger
 
 def open_image(file_name, load=False):
@@ -55,13 +55,24 @@ def build_image_thumbnail(image_path, size, orig_size=None):
 
     return numpy.array(image)
 
-def build_directory_thumbnail(dir_path, size, orig_size=None,
-                              check_cancelled=None):
+def build_directory_thumbnail(dir_path, size, orig_size=None, **kwargs):
+    kwargs.setdefault('show_hidden_files', False)
+    num_picks = kwargs.setdefault('num_picks', 4)
+
     tx, ty = (100, 100)
     thumbnail_aspect = float(tx)/ty
     scale_factor = (float(size[0])/tx if thumbnail_aspect > 1.0
                     else float(size[1])/ty)
-    images = choose_representatives(dir_path, check_cancelled=check_cancelled)
+    images = []
+    for image_path in pick_files(dir_path, **kwargs):
+        orig_image = open_image(image_path, load=True)
+        if orig_image is None:
+            continue
+
+        images.append(orig_image)
+        if len(images) == num_picks:
+            break
+
     if len(images) == 0:
         dir_name = os.path.split(dir_path)[-1]
         return icons.generate_text_icon(dir_name, size, cache=True)
@@ -80,7 +91,7 @@ def build_directory_thumbnail(dir_path, size, orig_size=None,
         ((50, 50), (50, 50))]]
     layout = layouts[len(images)]
     out = build_empty_thumbnail(size)
-    for i, image_path in enumerate(images):
+    for i, image in enumerate(images):
         dest_pos, dest_size = layout[i]
         dx = int(round(dest_size[0]*scale_factor))
         dy = int(round(dest_size[1]*scale_factor))
@@ -88,12 +99,7 @@ def build_directory_thumbnail(dir_path, size, orig_size=None,
         dpy = int(round(dest_pos[1]*scale_factor))
         dest_aspect = float(dest_size[0])/dest_size[1]
 
-        orig_image = open_image(image_path, load=True)
-        if orig_image is None:
-            # TODO: replace with a broken picture image.
-            continue
-
-        ox, oy = orig_image.size
+        ox, oy = image.size
         orig_aspect = float(ox)/oy
 
         # Cut a part of the original image which has the same aspect ratio
@@ -103,9 +109,9 @@ def build_directory_thumbnail(dir_path, size, orig_size=None,
                     if dest_aspect >= orig_aspect
                     else (int(round(dx*oy/dy)), oy))
         cut_pos = ((ox - cut_size[0])//2, (oy - cut_size[1])//2)
-        cut_image = orig_image.crop((cut_pos[0], cut_pos[1],
-                                     cut_pos[0] + cut_size[0],
-                                     cut_pos[1] + cut_size[1]))
+        cut_image = image.crop((cut_pos[0], cut_pos[1],
+                                cut_pos[0] + cut_size[0],
+                                cut_pos[1] + cut_size[1]))
         cut_image.thumbnail((dx, dy))
         arr = numpy.array(cut_image)
         if arr.ndim != 3 or arr.dtype != numpy.uint8 or arr.shape[-1] != 3:

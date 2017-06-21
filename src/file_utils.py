@@ -15,6 +15,7 @@
 '''Generic utility for file sorting.'''
 
 import os
+from collections import deque
 
 
 class FileListItem(object):
@@ -139,7 +140,8 @@ def categorize_files(file_list, file_extensions=None, sort_type=None,
     # For now we only provide one sort type. Later we may want to provide a
     # tuple of sort types from the one which has the higher precedence to the
     # one which has the lowest precedence. Infrastructure for this is already
-    # in place. Here we map the single sort order to a tuple which makes sense.
+    # in place. Here we map the single sort order to a tuple which makes
+    # sense.
     if sort_type is not None:
         if sort_type == FileList.SORT_BY_FILE_NAME:
             sort_types = (sort_type,)
@@ -218,3 +220,75 @@ def choose_representatives(directory_path, num=4, check_cancelled=None,
         out.append(all_images.pop(index))
         index += step
     return out
+
+def sparse_iterator(items, num_steps):
+    '''Sparse iteration over `items`. Every element of the list `items` is
+    returned exactly once, but with a different order which can be tweaked by
+    changing `num_steps`. The i-th invocation of the iterator roughly returns
+    items[i*len(items)//num_steps].
+    '''
+    assert num_steps >= 1
+    items = list(items)
+    idx = 0
+    while items:
+        if idx >= len(items):
+            idx = idx % len(items)
+        yield items[idx]
+        items.pop(idx)
+        idx += len(items) // num_steps
+
+
+def pick_files(path, num_picks=4, follow_links=False, **kwargs):
+    '''Traverse the `path` and its subdirectories with the aim of picking
+    `num_picks` files as sparsely as possible. `follow_links` decides whether
+    symlinks should be followed or ignored in the directory traversal.
+    Keyword arguments in `kwargs` are passed to `get_files_in_dir` and can
+    be used to restrict the file extensions, provide a cancel check, decide
+    the sort order or whether hidden files should be ignored or not.
+    '''
+
+    # We try to pick one file per location, but if we don't find more files
+    # in other locations we may go back to these locations from which we
+    # picked some files already.
+    remaining_file_iters = deque()
+
+    # visited_already ensures we don't end up following circular symlinks.
+    visited_already = set()
+
+    # Do a breadth first search starting from the given directory.
+    paths_to_visit = deque()
+    if os.path.isdir(path):
+        paths_to_visit.append(path)
+
+    while paths_to_visit:
+        p = paths_to_visit.popleft()
+        entries = get_files_in_dir(p, **kwargs)
+        files = [name for is_dir, name in entries if not is_dir]
+        dirs = [name for is_dir, name in entries if is_dir]
+
+        # Pick one file from this location and save the iterator in case we
+        # later needs to pick more files.
+        file_iter = sparse_iterator(files, num_picks)
+        candidate = next(file_iter, None)
+        if candidate is not None:
+            yield candidate
+        remaining_file_iters.append(file_iter)
+
+        # Append other directories in a sparse order so that we can continue
+        # to explore the hierarchy.
+        for dir_name in sparse_iterator(dirs, num_picks):
+            rp = os.path.realpath(dir_name)
+            if rp not in visited_already:
+                if rp == dir_name or follow_links:
+                    paths_to_visit.append(dir_name)
+                    visited_already.add(rp)
+
+    # We get here when we didn't manage to pick all the files from different
+    # locations. So here we go back to the previous locations to pick more
+    # files.
+    while remaining_file_iters:
+        file_iter = remaining_file_iters.popleft()
+        candidate = next(file_iter, None)
+        if candidate is not None:
+            yield candidate
+            remaining_file_iters.append(file_iter)
