@@ -37,7 +37,7 @@ def build_empty_thumbnail(size):
     pixbuf.subpixbuf(1, 1, sx - 2, sy - 2).fill(0xffffffff)
     return pixbuf
 
-def build_image_thumbnail(image_path, size, orig_size=None):
+def build_image_thumbnail(image_path, size):
     try:
         image = PIL.Image.open(image_path)
         image.thumbnail(size)
@@ -45,8 +45,7 @@ def build_image_thumbnail(image_path, size, orig_size=None):
         return None
 
     if image.size != size:
-        logger.debug('got {}, required {}, {}'
-                     .format(image.size, size, orig_size))
+        logger.debug('got {}, required {}'.format(image.size, size))
 
     if image.mode != 'RGB':
         image = image.convert('RGBA')
@@ -55,7 +54,7 @@ def build_image_thumbnail(image_path, size, orig_size=None):
 
     return numpy.array(image)
 
-def build_directory_thumbnail(dir_path, size, orig_size=None, **kwargs):
+def build_directory_thumbnail(dir_path, size, **kwargs):
     kwargs.setdefault('show_hidden_files', False)
     num_picks = kwargs.setdefault('num_picks', 4)
 
