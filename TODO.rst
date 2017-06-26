@@ -14,9 +14,6 @@ Browsing part
   an incomplete layout (where one or more rows have been created but not
   all).
 
-- [RB] Fix visualisation of small images (images for which the thumbnail is
-  not smaller).
-
 - [R] Remember sorting preferences.
 
 - [RB] Recalculate browsing position when re-sorting, etc.
@@ -44,3 +41,6 @@ Browsing part
 - [R] Rewrite directory thumbnail generation algorithm.
 
 - [RB] Fix directory thumbnail for (transparent?) PNG (they appear white).
+
+- [RB] Fix visualisation of small images (images for which the thumbnail is
+  not smaller).

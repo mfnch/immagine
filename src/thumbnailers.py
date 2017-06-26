@@ -44,10 +44,21 @@ def to_rgb(image, bg=(127, 127, 127)):
         image = PIL.Image.alpha_composite(background, image).convert('RGB')
     return image
 
+def _resize_image(image, new_size):
+    new_x, new_y = new_size
+    old_x, old_y = image.size
+    if new_x >= old_x or new_y >= old_y:
+        # Upscale.
+        return image.resize(new_size, PIL.Image.LANCZOS)
+    else:
+        # Downscale.
+        image.thumbnail(new_size)
+        return image
+
 def build_image_thumbnail(image_path, size):
     try:
         image = PIL.Image.open(image_path)
-        image.thumbnail(size)
+        image = _resize_image(image, size)
     except:
         return None
 
@@ -112,7 +123,7 @@ def build_directory_thumbnail(dir_path, size, **kwargs):
         cut_image = image.crop((cut_pos[0], cut_pos[1],
                                 cut_pos[0] + cut_size[0],
                                 cut_pos[1] + cut_size[1]))
-        cut_image.thumbnail((dx, dy))
+        cut_image = _resize_image(cut_image, (dx, dy))
         arr = numpy.array(cut_image)
         if arr.ndim != 3 or arr.dtype != numpy.uint8 or arr.shape[-1] != 3:
             continue
