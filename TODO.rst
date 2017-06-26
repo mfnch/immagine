@@ -4,6 +4,11 @@ Todos
 In the lists below we mark with [R] the features that we consider necessary
 for the 1.0 release of the app. We mark with [B] known bugs.
 
+Common
+------
+
+- Add app icon and desktop integration.
+
 Browsing part
 -------------
 
@@ -20,6 +25,14 @@ Browsing part
 
 - [R] Caching of thumbnails.
 
+- Handle better empty directories and directories with no images in them.
+  Maybe show an "Empty directory" message? Or provide a button to switch on
+  viewing the files?
+
+- Better aesthetics for thumbnails and various icons: directory thumbnails
+  could use gradients to mark the border between adjacent images. Nicer icons
+  for loading thumbnail, ordinary directory, broken image or ordinary file.
+
 Viewer part
 -----------
 
@@ -31,6 +44,9 @@ Viewer part
 - Scale to fit and fill screen.
 
 - Refine navigation with mouse, with keyboard, with touchpad.
+
+- Allow to choose background for images with transparency and automatically
+  choose the default.
 
 Done
 ====
