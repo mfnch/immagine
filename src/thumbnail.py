@@ -56,12 +56,12 @@ class ImageThumbnail(ThumbnailBase):
 
     def obtain_image_info(self):
         image = open_image(self.file_list_item.full_path)
-        if image is not None:
+        orig_size = (100, 100)
+        if image is not None and min(image.size) >= 1:
             orig_size = image.size
-            del image
         else:
             self.damaged = True
-            orig_size = (100, 100)
+        del image
         self.orig_size = orig_size
 
 class DirectoryThumbnail(ThumbnailBase):

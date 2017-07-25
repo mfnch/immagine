@@ -206,16 +206,23 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         '''
 
         file_item = thumbnail.get_file_item()
-        tn = self.orchestrator.request_thumbnail(file_item.full_path,
-                                                 thumbnail.size)
-        if tn.state is THUMBNAIL_DONE:
-            return \
-              gtk.gdk.pixbuf_new_from_array(tn.data, gtk.gdk.COLORSPACE_RGB, 8)
-        text = 'Loading...\n' + os.path.split(file_item.name)[-1]
-        loading_icon_color = \
-          self._config.get_color_triple('thumb.color.loading', '#ff0000')
+        if not thumbnail.damaged:
+            tn = self.orchestrator.request_thumbnail(file_item.full_path,
+                                                     thumbnail.size)
+            if tn.state is THUMBNAIL_DONE:
+                return \
+                    gtk.gdk.pixbuf_new_from_array(tn.data,
+                                                  gtk.gdk.COLORSPACE_RGB, 8)
+            text = 'Loading...\n' + os.path.basename(file_item.name)
+            icon_color = self._config.get_color_triple('thumb.color.loading',
+                                                       '#ff0000')
+        else:
+            text = os.path.basename(file_item.name) + '\n(Damaged)'
+            icon_color = self._config.get_color_triple('thumb.color.damaged',
+                                                       '#a00000')
+
         return icons.generate_text_icon(text, thumbnail.size, cache=True,
-                                        color=loading_icon_color,
+                                        color=icon_color,
                                         out_format=icons.FORMAT_PIXBUF)
         return build_empty_thumbnail(thumbnail.size)
 

@@ -80,6 +80,9 @@ def build_directory_thumbnail(dir_path, size, **kwargs):
         if orig_image is None:
             continue
 
+        if min(orig_image.size) < 1:
+            continue
+
         images.append(to_rgb(orig_image))
         if len(images) == num_picks:
             break

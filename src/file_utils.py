@@ -79,7 +79,8 @@ class FileList(object):
         self.callbacks.append(update_callback)
 
 
-image_file_extensions = ('.jpeg', '.jpg', '.png', '.tif', '.xpm', '.bmp')
+image_file_extensions = \
+  ('.jpeg', '.jpg', '.png', '.tif', '.xpm', '.bmp', '.gif')
 
 def list_dir(directory_path, check_cancelled=None):
     '''Return the files in the directory or an empty list if the directory
