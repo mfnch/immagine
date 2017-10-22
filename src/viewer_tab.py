@@ -66,6 +66,7 @@ class ViewerTab(BaseTab):
         self.pack_start(sw)
 
         eb.connect('size-allocate', self.on_size_allocate)
+        eb.connect('scroll_event', self.on_scroll_event)
         self.close_button.connect('clicked', self.close_tab)
 
     def on_size_allocate(self, widget, allocation):
@@ -96,14 +97,40 @@ class ViewerTab(BaseTab):
             return False
         return True
 
+    def on_scroll_event(self, widget, event):
+        name = ''
+        if event.state & gtk.gdk.CONTROL_MASK:
+            name += 'ctrl+'
+        if event.state & gtk.gdk.SHIFT_MASK:
+            name += 'shift+'
+
+        dir_name = {gtk.gdk.SCROLL_UP: 'scroll:up',
+                    gtk.gdk.SCROLL_DOWN: 'scroll:down'}
+        if event.direction not in dir_name:
+            return False
+        name += dir_name[event.direction]
+
+        if name in ('scroll:up', 'scroll:down'):
+            mouse_ptr = (event.x, event.y)
+            fn = (self.zoom_in if name == 'scroll:up' else self.zoom_out)
+            fn(zoom_factor=1.1)
+            return True
+        elif name in ('ctrl+scroll:up', 'ctrl+scroll:down'):
+            pass
+        elif name == 'shift+scroll:up':
+            event.direction = gtk.gdk.SCROLL_LEFT
+        elif name == 'shift+scroll:down':
+            event.direction = gtk.gdk.SCROLL_RIGHT
+        return False
+
     def close_tab(self, action=None):
         self.call('close_tab', self)
 
-    def zoom_in(self, action=None):
-        self.zoom_by_factor(self.zoom_increment)
+    def zoom_in(self, action=None, zoom_factor=None):
+        self.zoom_by_factor(zoom_factor or self.zoom_increment)
 
-    def zoom_out(self, action=None):
-        self.zoom_by_factor(1.0 / self.zoom_increment)
+    def zoom_out(self, action=None, zoom_factor=None):
+        self.zoom_by_factor(1.0 / (zoom_factor or self.zoom_increment))
 
     def zoom_by_factor(self, factor):
         pixbuf = self.image.get_pixbuf()

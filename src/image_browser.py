@@ -74,10 +74,9 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         self.props.has_tooltip = True
 
         # Allow the object to receive scroll events and other events.
-        mask = (gtk.gdk.POINTER_MOTION_MASK |
-                gtk.gdk.BUTTON_PRESS_MASK |
-                gtk.gdk.BUTTON_RELEASE_MASK)
-        self.add_events(mask)
+        self.add_events(gtk.gdk.POINTER_MOTION_MASK |
+                        gtk.gdk.BUTTON_PRESS_MASK |
+                        gtk.gdk.BUTTON_RELEASE_MASK)
 
         self.connect('expose_event', self.on_expose_event)
         self.connect('set-scroll-adjustment', ImageBrowser.scroll_adjustment)

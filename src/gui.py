@@ -114,8 +114,8 @@ class ApplicationMainWindow(gtk.Window):
         self.add(self.window_content)
 
         # Allow the window to get events.
-        mask = gtk.gdk.KEY_PRESS_MASK | gtk.gdk.POINTER_MOTION_MASK
-        self.add_events(mask)
+        self.add_events(gtk.gdk.KEY_PRESS_MASK |
+                        gtk.gdk.POINTER_MOTION_MASK)
         self.connect('key-press-event', self.on_key_press_event)
         self.connect("motion_notify_event", self.on_motion_notify_event)
 
