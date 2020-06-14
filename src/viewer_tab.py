@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import gtk
+from gi.repository import Gtk
 
 from .base_tab import BaseTab
 from .config import Config, COLOR
@@ -22,16 +22,16 @@ class ViewerTab(BaseTab):
     def __init__(self, image_path, file_list=None, file_index=None,
                  config=None):
         toolbar_desc = \
-         ((gtk.STOCK_ZOOM_IN, 'Zoom in', 'zoom_in'),
-          (gtk.STOCK_ZOOM_FIT, 'Zoom to fit', 'zoom_fit'),
-          (gtk.STOCK_ZOOM_OUT, 'Zoom out', 'zoom_out'),
-          (gtk.STOCK_ZOOM_100, 'Zoom to 100%', 'zoom_100'),
+         ((Gtk.STOCK_ZOOM_IN, 'Zoom in', 'zoom_in'),
+          (Gtk.STOCK_ZOOM_FIT, 'Zoom to fit', 'zoom_fit'),
+          (Gtk.STOCK_ZOOM_OUT, 'Zoom out', 'zoom_out'),
+          (Gtk.STOCK_ZOOM_100, 'Zoom to 100%', 'zoom_100'),
           (),
-          (gtk.STOCK_MEDIA_PREVIOUS, 'Previous picture', 'change_previous'),
-          (gtk.STOCK_MEDIA_NEXT, 'Next picture', 'change_next'),
-          (gtk.STOCK_CLOSE, 'Close tab', 'close_tab'),
+          (Gtk.STOCK_MEDIA_PREVIOUS, 'Previous picture', 'change_previous'),
+          (Gtk.STOCK_MEDIA_NEXT, 'Next picture', 'change_next'),
+          (Gtk.STOCK_CLOSE, 'Close tab', 'close_tab'),
           (),
-          (gtk.STOCK_FULLSCREEN, 'Enter full-screen mode', 'fullscreen'))
+          (Gtk.STOCK_FULLSCREEN, 'Enter full-screen mode', 'fullscreen'))
         super(ViewerTab, self).__init__(image_path, toolbar_desc,
                                         with_close_button=True,
                                         label_ellipsize_end=True,
@@ -44,26 +44,26 @@ class ViewerTab(BaseTab):
         self.min_zoom = 0.02       # Minimum zoom factor.
         self.zoom_increment = 1.5  # Zoom magnification when doing a "zoom in".
         self.image_path = image_path
-        self.image = image = gtk.Image()
+        self.image = image = Gtk.Image()
         self.size = None
-        pixbuf = gtk.gdk.pixbuf_new_from_file(image_path)
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file(image_path)
         image.set_from_pixbuf(pixbuf)
 
-        eb = gtk.EventBox()
+        eb = Gtk.EventBox()
         eb.add(image)
 
-        self.scrolled_window = sw = gtk.ScrolledWindow()
-        vp = gtk.Viewport()
+        self.scrolled_window = sw = Gtk.ScrolledWindow()
+        vp = Gtk.Viewport()
         vp.add(eb)
         sw.add(vp)
 
         # Set color in the viewport around the picture.
         color = self._config.get('viewer.bg_color', '#000', COLOR)
-        vp.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(color))
-        eb.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(color))
+        vp.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(color))
+        eb.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(color))
 
-        self.pack_start(self.toolbar, expand=False)
-        self.pack_start(sw)
+        self.pack_start(self.toolbar, False, True, 0)
+        self.pack_start(sw, True, True, 0)
 
         eb.connect('size-allocate', self.on_size_allocate)
         eb.connect('scroll_event', self.on_scroll_event)
@@ -76,9 +76,9 @@ class ViewerTab(BaseTab):
 
     def on_key_press_event(self, event):
         name = ''
-        if event.state & gtk.gdk.CONTROL_MASK:
+        if event.get_state() & Gdk.ModifierType.CONTROL_MASK:
             name += 'ctrl+'
-        name += gtk.gdk.keyval_name(event.keyval).lower()
+        name += Gdk.keyval_name(event.keyval).lower()
         if name in ('ctrl+minus', 'up'):
             self.zoom_out()
         elif name in ('ctrl+plus', 'down'):
@@ -99,13 +99,13 @@ class ViewerTab(BaseTab):
 
     def on_scroll_event(self, widget, event):
         name = ''
-        if event.state & gtk.gdk.CONTROL_MASK:
+        if event.get_state() & Gdk.ModifierType.CONTROL_MASK:
             name += 'ctrl+'
-        if event.state & gtk.gdk.SHIFT_MASK:
+        if event.get_state() & Gdk.ModifierType.SHIFT_MASK:
             name += 'shift+'
 
-        dir_name = {gtk.gdk.SCROLL_UP: 'scroll:up',
-                    gtk.gdk.SCROLL_DOWN: 'scroll:down'}
+        dir_name = {Gdk.ScrollDirection.UP: 'scroll:up',
+                    Gdk.ScrollDirection.DOWN: 'scroll:down'}
         if event.direction not in dir_name:
             return False
         name += dir_name[event.direction]
@@ -118,9 +118,9 @@ class ViewerTab(BaseTab):
         elif name in ('ctrl+scroll:up', 'ctrl+scroll:down'):
             pass
         elif name == 'shift+scroll:up':
-            event.direction = gtk.gdk.SCROLL_LEFT
+            event.direction = Gdk.ScrollDirection.LEFT
         elif name == 'shift+scroll:down':
-            event.direction = gtk.gdk.SCROLL_RIGHT
+            event.direction = Gdk.ScrollDirection.RIGHT
         return False
 
     def close_tab(self, action=None):
@@ -139,7 +139,7 @@ class ViewerTab(BaseTab):
         self.zoom_to_size(new_width, new_height)
 
     def zoom_to_size(self, width, height, check_zoom_factor=True):
-        pixbuf = gtk.gdk.pixbuf_new_from_file(self.image_path)
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file(self.image_path)
         pixbuf_width = pixbuf.get_width()
         pixbuf_height = pixbuf.get_height()
 
@@ -161,7 +161,7 @@ class ViewerTab(BaseTab):
                 return
 
         pixbuf = pixbuf.scale_simple(new_width, new_height,
-                                     gtk.gdk.INTERP_BILINEAR)
+                                     GdkPixbuf.InterpType.BILINEAR)
         self.image.clear()
         self.image.set_from_pixbuf(pixbuf)
 
@@ -175,7 +175,7 @@ class ViewerTab(BaseTab):
         self.zoom_to_size(rect.width - 2, rect.height - 2)
 
     def zoom_100(self, action=None):
-        pixbuf = gtk.gdk.pixbuf_new_from_file(self.image_path)
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file(self.image_path)
         self.image.clear()
         self.image.set_from_pixbuf(pixbuf)
 

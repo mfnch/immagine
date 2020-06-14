@@ -234,7 +234,7 @@ class Orchestrator(BackCaller):
                 comment('Too many thumbnails ({}): removing old thumbnails...'
                         .format(len(self.thumbnails)))
                 all_tns = [(tn.file_name, tn.request_id)
-                           for tn in self.thumbnails.itervalues()]
+                           for tn in self.thumbnails.values()]
                 all_tns.sort(lambda a, b: cmp(b[1], a[1]))
                 for file_name_to_remove, _ in \
                   all_tns[self.thumbnail_soft_limit:]:
@@ -279,7 +279,7 @@ class Orchestrator(BackCaller):
         '''Abort all the work in progress and clear the queue.'''
 
         # Need to remove LOADING-thumbnails from the cache.
-        tn_to_remove = [tn.file_name for tn in self.thumbnails.itervalues()
+        tn_to_remove = [tn.file_name for tn in self.thumbnails.values()
                         if tn.state == THUMBNAIL_LOADING]
         for tn in tn_to_remove:
             self.thumbnails.pop(tn)

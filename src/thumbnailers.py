@@ -15,7 +15,7 @@
 import os
 import numpy
 import PIL.Image
-import gtk
+from gi.repository import Gtk
 
 from . import icons
 from .file_utils import pick_files
@@ -32,7 +32,7 @@ def open_image(file_name, load=False):
 
 def build_empty_thumbnail(size):
     sx, sy = size
-    pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, sx, sy)
+    pixbuf = GdkPixbuf.Pixbuf(GdkPixbuf.Colorspace.RGB, False, 8, sx, sy)
     pixbuf.fill(0x7f7f7f7f)
     pixbuf.subpixbuf(1, 1, sx - 2, sy - 2).fill(0xffffffff)
     return pixbuf
@@ -131,7 +131,7 @@ def build_directory_thumbnail(dir_path, size, **kwargs):
         if arr.ndim != 3 or arr.dtype != numpy.uint8 or arr.shape[-1] != 3:
             continue
         cut_pixmap = \
-          gtk.gdk.pixbuf_new_from_array(arr, gtk.gdk.COLORSPACE_RGB, 8)
+          GdkPixbuf.Pixbuf.new_from_array(arr, GdkPixbuf.Colorspace.RGB, 8)
         width = min(cut_pixmap.get_width(), size[0] - dpx)
         height = min(cut_pixmap.get_height(), size[1] - dpy)
         cut_pixmap.copy_area(0, 0, width, height, out, dpx, dpy)

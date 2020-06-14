@@ -14,7 +14,7 @@
 
 import os
 
-import gtk
+from gi.repository import Gtk, Gdk
 
 from .base_tab import BaseTab
 from .image_browser import ImageBrowser
@@ -23,16 +23,16 @@ from .image_browser import ImageBrowser
 class BrowserTab(BaseTab):
     def __init__(self, directory_path, **kwargs):
         toolbar_desc = \
-          ((gtk.STOCK_OPEN, 'Select a new directory to browse', 'on_open'),
-           (gtk.STOCK_GO_UP, 'Parent directory', 'go_up'),
-           (gtk.STOCK_GO_BACK, 'Go back to previous directory', 'go_back'),
-           (gtk.STOCK_GO_FORWARD, 'Go to next directory', 'go_forward'),
+          ((Gtk.STOCK_OPEN, 'Select a new directory to browse', 'on_open'),
+           (Gtk.STOCK_GO_UP, 'Parent directory', 'go_up'),
+           (Gtk.STOCK_GO_BACK, 'Go back to previous directory', 'go_back'),
+           (Gtk.STOCK_GO_FORWARD, 'Go to next directory', 'go_forward'),
            (),
-           (gtk.STOCK_ZOOM_IN, 'Increase thumbnail size', 'zoom_in'),
-           (gtk.STOCK_ZOOM_OUT, 'Decrease thumbnail size', 'zoom_out'),
-           (gtk.STOCK_ZOOM_100, 'Default thumbnail size', 'zoom_100'),
+           (Gtk.STOCK_ZOOM_IN, 'Increase thumbnail size', 'zoom_in'),
+           (Gtk.STOCK_ZOOM_OUT, 'Decrease thumbnail size', 'zoom_out'),
+           (Gtk.STOCK_ZOOM_100, 'Default thumbnail size', 'zoom_100'),
            (),
-           (gtk.STOCK_FULLSCREEN, 'Enter full-screen mode', 'fullscreen'))
+           (Gtk.STOCK_FULLSCREEN, 'Enter full-screen mode', 'fullscreen'))
 
         super(BrowserTab, self).__init__(directory_path,
                                          toolbar_desc,
@@ -47,14 +47,14 @@ class BrowserTab(BaseTab):
 
         # Image browser widget.
         self._image_browser = ib = ImageBrowser(directory_path, **kwargs)
-        sw = gtk.ScrolledWindow()
-        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        sw.set_shadow_type(gtk.SHADOW_IN)
+        sw = Gtk.ScrolledWindow()
+        sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        sw.set_shadow_type(Gtk.ShadowType.IN)
         sw.add(ib)
 
         # Add the two widgets (toolbar and image browser) to the main vbox.
-        self.pack_start(self.toolbar, expand=False)
-        self.pack_start(sw)
+        self.pack_start(self.toolbar, False, True, 0)
+        self.pack_start(sw, True, True, 0)
 
         # Set up signals.
         ib.set_callback('directory_changed', self.on_directory_changed)
@@ -80,9 +80,9 @@ class BrowserTab(BaseTab):
 
     def on_key_press_event(self, event):
         name = ''
-        if event.state & gtk.gdk.CONTROL_MASK:
+        if event.get_state() & Gdk.ModifierType.CONTROL_MASK:
             name += 'ctrl+'
-        name += gtk.gdk.keyval_name(event.keyval).lower()
+        name += Gdk.keyval_name(event.keyval).lower()
         if name == 'ctrl+minus':
             self.zoom_out()
         elif name == 'ctrl+plus':

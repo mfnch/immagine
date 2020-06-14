@@ -1,4 +1,4 @@
-# Copyright 2016, 2017 Matteo Franchin
+# Copyright 2016-2017, 2020 Matteo Franchin
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,10 +13,9 @@
 # limitations under the License.
 
 import os
+import logging as L
 
-import gobject
-import gtk
-import gtk.gdk
+from gi.repository import GObject, Gtk, Gdk, GdkPixbuf, GLib
 
 from . import layout
 from . import icons
@@ -33,18 +32,13 @@ class Location(object):
         self.y = y_pos
 
 
-class ImageBrowser(gtk.DrawingArea, BackCaller):
-    __gsignals__ = \
-      {'set-scroll-adjustment': (gobject.SIGNAL_RUN_LAST,
-                                 gobject.TYPE_NONE,
-                                 (gtk.Adjustment, gtk.Adjustment))}
-
+class ImageBrowser(Gtk.DrawingArea, Gtk.Scrollable, BackCaller):
     def __init__(self, start_dir, hadjustment=None, vadjustment=None,
                  config=None):
+        Gtk.DrawingArea.__init__(self)
         BackCaller.__init__(self,
                             directory_changed=None,
                             image_clicked=None)
-        gtk.DrawingArea.__init__(self)
 
         assert config is not None
         self._config = config
@@ -74,11 +68,11 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         self.props.has_tooltip = True
 
         # Allow the object to receive scroll events and other events.
-        self.add_events(gtk.gdk.POINTER_MOTION_MASK |
-                        gtk.gdk.BUTTON_PRESS_MASK |
-                        gtk.gdk.BUTTON_RELEASE_MASK)
+        self.add_events(Gdk.EventMask.POINTER_MOTION_MASK |
+                        Gdk.EventMask.BUTTON_PRESS_MASK |
+                        Gdk.EventMask.BUTTON_RELEASE_MASK)
 
-        self.connect('expose_event', self.on_expose_event)
+        #self.connect('expose_event', self.on_expose_event)
         self.connect('set-scroll-adjustment', ImageBrowser.scroll_adjustment)
         self.connect('configure-event', self.on_size_change)
         self.connect('button-press-event', self.on_button_press_event)
@@ -133,10 +127,10 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
     def scroll_adjustment(self, hadjustment, vadjustment):
         self._hadjustment = hadjustment
         self._vadjustment = vadjustment
-        if isinstance(hadjustment, gtk.Adjustment):
+        if isinstance(hadjustment, Gtk.Adjustment):
             self._hadj_valchanged_handler = \
                 hadjustment.connect("value-changed", self._adjustments_changed)
-        if isinstance(vadjustment, gtk.Adjustment):
+        if isinstance(vadjustment, Gtk.Adjustment):
             self._vadj_valchanged_handler = \
                 vadjustment.connect("value-changed", self._adjustments_changed)
             self._update_scrollbars()
@@ -210,8 +204,8 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
                                                      thumbnail.size)
             if tn.state is THUMBNAIL_DONE:
                 return \
-                    gtk.gdk.pixbuf_new_from_array(tn.data,
-                                                  gtk.gdk.COLORSPACE_RGB, 8)
+                    GdkPixbuf.Pixbuf.new_from_array(tn.data,
+                                                  GdkPixbuf.Colorspace.RGB, 8)
             text = 'Loading...\n' + os.path.basename(file_item.name)
             icon_color = self._config.get_color_triple('thumb.color.loading',
                                                        '#ff0000')
@@ -229,7 +223,7 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
         '''Called by the orchestrator when thumbnails become available.'''
 
         # As this function is called by a separate thread, we take the lock.
-        with gtk.gdk.lock:
+        with Gdk.lock:
             self.queue_draw()
 
     def on_expose_event(self, draw_area, event):
@@ -385,4 +379,4 @@ class ImageBrowser(gtk.DrawingArea, BackCaller):
             return
         self.update_album()
 
-ImageBrowser.set_set_scroll_adjustments_signal('set-scroll-adjustment')
+#ImageBrowser.set_set_scroll_adjustments_signal('set-scroll-adjustment')

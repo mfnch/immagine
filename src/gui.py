@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2016, 2017 Matteo Franchin
+# Copyright 2016-2017, 2020 Matteo Franchin
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,10 +21,9 @@ import sys
 import argparse
 import logging
 
-import pygtk
-pygtk.require('2.0')
-import gtk
-import gobject
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, Gdk, GObject
 
 from .browser_tab import BrowserTab
 from .viewer_tab import ViewerTab
@@ -49,7 +48,7 @@ def create_radio_tuple(name=None, stock_id=None, label=None, accel=None,
     return (name, stock_id, label, accel, tooltip, value)
 
 
-class ApplicationMainWindow(gtk.Window):
+class ApplicationMainWindow(Gtk.Window):
     application_name = 'Immagine image viewer'
 
     def __init__(self, start_path, image_paths=[],
@@ -66,14 +65,14 @@ class ApplicationMainWindow(gtk.Window):
         try:
             self.set_screen(parent.get_screen())
         except AttributeError:
-            self.connect('destroy', lambda *w: gtk.main_quit())
+            self.connect('destroy', lambda *w: Gtk.main_quit())
         width, height = self._get_window_size()
         self.set_default_size(width, height)
 
         # Populate the window.
         self.set_title(self.application_name)
-        self.ui_manager = ui_manager = gtk.UIManager()
-        self.set_data('ui-manager', ui_manager)
+        self.ui_manager = ui_manager = Gtk.UIManager()
+        #self.set_data('ui-manager', ui_manager)
         ui_info, action_group = self._create_action_group()
         ui_manager.insert_action_group(action_group, 0)
         self.add_accel_group(ui_manager.get_accel_group())
@@ -97,9 +96,9 @@ class ApplicationMainWindow(gtk.Window):
         bar.show()
 
         # Below the menu, we place the notebook.
-        self.notebook = nb = gtk.Notebook()
+        self.notebook = nb = Gtk.Notebook()
         nb.set_scrollable(True)
-        nb.set_tab_pos(gtk.POS_TOP)
+        nb.set_tab_pos(Gtk.PositionType.TOP)
 
         # One a browsing tab for the given directory and one viewer tab for
         # each given image.
@@ -108,14 +107,14 @@ class ApplicationMainWindow(gtk.Window):
             self.open_tab(image_path)
 
         # Place menu and notebook in a VBox. Add this to the window.
-        self.window_content = vbox = gtk.VBox()
-        vbox.pack_start(bar, expand=False)
-        vbox.pack_start(nb)
+        self.window_content = vbox = Gtk.VBox()
+        vbox.pack_start(bar, False, True, 0)
+        vbox.pack_start(nb, True, True, 0)
         self.add(self.window_content)
 
         # Allow the window to get events.
-        self.add_events(gtk.gdk.KEY_PRESS_MASK |
-                        gtk.gdk.POINTER_MOTION_MASK)
+        self.add_events(Gdk.EventMask.KEY_PRESS_MASK |
+                        Gdk.EventMask.POINTER_MOTION_MASK)
         self.connect('key-press-event', self.on_key_press_event)
         self.connect("motion_notify_event", self.on_motion_notify_event)
 
@@ -183,8 +182,8 @@ class ApplicationMainWindow(gtk.Window):
 
             # Put back the tab widget to its original parent.
             toolbar = self.fullscreen_toolbar.end()
-            self.fullscreen_widget.pack_start(toolbar, expand=False)
-            self.fullscreen_widget.pack_start(tab_content)
+            self.fullscreen_widget.pack_start(toolbar, False, True, 0)
+            self.fullscreen_widget.pack_start(tab_content, True, True, 0)
             self.fullscreen_widget = None
 
         fs = self.get_fullscreen_mode()
@@ -238,13 +237,13 @@ class ApplicationMainWindow(gtk.Window):
            action(name='ViewMenu', label='_View'),
            action(name='SortFilesBy', label='_Sort files by'),
            action(name='HelpMenu', label='_Help'),
-           action(name='Quit', stock_id=gtk.STOCK_QUIT, label='Quit',
+           action(name='Quit', stock_id=Gtk.STOCK_QUIT, label='Quit',
                   accel='<control>Q', tooltip='Quit',
                   fn=self.quit_action),
-           action(name='Open', stock_id=gtk.STOCK_OPEN,
+           action(name='Open', stock_id=Gtk.STOCK_OPEN,
                   label='_Open directory', accel='<control>O',
                   tooltip='Open a directory', fn=self.on_open_location),
-           action(name='SaveConfig', stock_id=gtk.STOCK_SAVE,
+           action(name='SaveConfig', stock_id=Gtk.STOCK_SAVE,
                   label='_Save configuration', accel='<control>C',
                   tooltip='Save Immagine configuration',
                   fn=self.on_save_config),
@@ -284,7 +283,7 @@ class ApplicationMainWindow(gtk.Window):
                  tooltip='Sort first by file size, then name',
                  value=FileList.SORT_BY_FILE_SIZE))
 
-        action_group = gtk.ActionGroup('AppWindowActions')
+        action_group = Gtk.ActionGroup('AppWindowActions')
         action_group.add_actions(action_entries)
         action_group.add_toggle_actions(toggle_entries)
         action_group.add_radio_actions(radio_entries,
@@ -293,7 +292,7 @@ class ApplicationMainWindow(gtk.Window):
         return (ui_info, action_group)
 
     def quit_action(self, action):
-        gtk.main_quit()
+        Gtk.main_quit()
 
     def open_tab(self, path):
         '''Create a new tab for the given file/directory path.'''
@@ -338,7 +337,7 @@ class ApplicationMainWindow(gtk.Window):
             self.change_layout()
 
     def about_action(self, action):
-        dialog = gtk.AboutDialog()
+        dialog = Gtk.AboutDialog()
         dialog.set_name('Immagine {}'.format(version))
         dialog.set_copyright('\302\251 Copyright 2016, 2017 Matteo Franchin')
         dialog.set_website('https://github.com/mfnch/immagine')
@@ -380,21 +379,21 @@ class ApplicationMainWindow(gtk.Window):
 
     def on_open_location(self, *action):
         if self.open_dialog is None:
-            buttons = (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                       gtk.STOCK_OPEN, gtk.RESPONSE_OK)
-            self.open_dialog = fc = gtk.FileChooserDialog(
+            buttons = (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                       Gtk.STOCK_OPEN, Gtk.ResponseType.OK)
+            self.open_dialog = fc = Gtk.FileChooserDialog(
                 title='Choose directory',
                 parent=None,
-                action=gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
+                action=Gtk.FileChooserAction.SELECT_FOLDER,
                 buttons=buttons, backend=None)
-            fc.set_default_response(gtk.RESPONSE_OK)
+            fc.set_default_response(Gtk.ResponseType.OK)
 
-            f = gtk.FileFilter()
+            f = Gtk.FileFilter()
             f.set_name('All files')
             f.add_pattern("*")
             fc.add_filter(f)
 
-            f = gtk.FileFilter()
+            f = Gtk.FileFilter()
             f.set_name("Images")
             f.add_mime_type("image/png")
             f.add_mime_type("image/jpeg")
@@ -405,7 +404,7 @@ class ApplicationMainWindow(gtk.Window):
 
         fc = self.open_dialog
         response = fc.run()
-        choice = (fc.get_filename() if response == gtk.RESPONSE_OK else None)
+        choice = (fc.get_filename() if response == Gtk.ResponseType.OK else None)
         fc.hide()
 
         if choice is not None:
@@ -466,7 +465,10 @@ def main(args=None):
 
     dir_path = os.path.realpath(dir_path)
 
-    gtk.gdk.threads_init()
-    with gtk.gdk.lock:
+    Gdk.threads_init()
+    try:
+        Gdk.threads_enter()
         ApplicationMainWindow(dir_path, img_paths, config=cfg)
-        gtk.main()
+        Gtk.main()
+    except:
+        Gdk.threads_leave()

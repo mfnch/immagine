@@ -1,4 +1,4 @@
-# Copyright 2016, 2017 Matteo Franchin
+# Copyright 2016-2017, 2020 Matteo Franchin
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import gobject
-import gtk
+from gi.repository import GObject, Gtk, Gdk
 
 
-class AutoHideWindow(gtk.Window):
+class AutoHideWindow(Gtk.Window):
     '''Popup window which auto-hides when the user does not interact with it.
     '''
 
     def __init__(self, parent=None, auto_hide_delay=3000, proximity=(0, 0),
                  role='toolbox'):
-        super(AutoHideWindow, self).__init__(gtk.WINDOW_TOPLEVEL)
+        super(AutoHideWindow, self).__init__(Gtk.WindowType.TOPLEVEL)
         self.proximity = proximity
 
         # Auto-hide timer.
@@ -37,10 +36,10 @@ class AutoHideWindow(gtk.Window):
         self.set_decorated(False)
         self.set_resizable(False)
         self.set_role(role)
-        self.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_TOOLBAR)
+        self.set_type_hint(Gdk.WindowTypeHint.TOOLBAR)
         self.set_skip_taskbar_hint(True)
         self.set_deletable(False)
-        self.set_events(gtk.gdk.POINTER_MOTION_MASK)
+        self.set_events(Gdk.EventMask.POINTER_MOTION_MASK)
         self.set_accept_focus(False)
 
         # Closing this window only hides it.
@@ -49,7 +48,7 @@ class AutoHideWindow(gtk.Window):
 
     def hide(self, *args):
         if self.timer is not None:
-            gobject.source_remove(self.timer)
+            GObject.source_remove(self.timer)
             self.timer = None
         self.preferred_position = self.get_position()
         super(AutoHideWindow, self).hide()
@@ -83,7 +82,7 @@ class AutoHideWindow(gtk.Window):
 
     def show_with_auto_hide(self, timeout=None):
         if self.timer is None:
-            self.timer = gobject.timeout_add(timeout or self.default_timeout,
+            self.timer = GObject.timeout_add(timeout or self.default_timeout,
                                              self.on_hide_timer)
             self.hide_at_timeout = True
             if self.preferred_position is not None:
@@ -100,9 +99,9 @@ class ToolbarWindow(object):
     def __init__(self):
         self.window = AutoHideWindow()
         self.toolbar = None
-        self.container = gtk.HBox(homogeneous=False, spacing=0)
+        self.container = Gtk.HBox(homogeneous=False, spacing=0)
         self.window.add(self.container)
-        self.move_button = gtk.Button('Move')
+        self.move_button = Gtk.Button('Move')
         self.move_button.connect('button-press-event', self.on_move_toolbar)
 
     def on_move_toolbar(self, widget, event):
@@ -112,8 +111,8 @@ class ToolbarWindow(object):
     def begin(self, toolbar):
         self.toolbar = toolbar
         hbox = self.container
-        hbox.pack_start(self.toolbar, expand=False, fill=False)
-        hbox.pack_end(self.move_button, expand=False, fill=False)
+        hbox.pack_start(self.toolbar, False, False, 0)
+        hbox.pack_end(self.move_button, False, False, 0)
         self.window.show_with_auto_hide()
 
     def end(self):

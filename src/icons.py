@@ -1,4 +1,4 @@
-# Copyright 2016, 2017 Matteo Franchin
+# Copyright 2016-2017, 2020 Matteo Franchin
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,10 +15,8 @@
 import sys
 
 import numpy
-import gtk
+from gi.repository import Gtk, Pango, GdkPixbuf
 import cairo
-import pango
-import pangocairo
 
 (FORMAT_PIXBUF, FORMAT_ARRAY) = range(2)
 
@@ -41,8 +39,8 @@ class Icon(object):
         data = data.reshape(self.height, self.width, -1)
         data = data[:, :, 1:]
         if self.out_format == FORMAT_PIXBUF:
-            return gtk.gdk.pixbuf_new_from_array(data,
-                                                 gtk.gdk.COLORSPACE_RGB, 8)
+            return GdkPixbuf.Pixbuf.new_from_array(data,
+                                                 GdkPixbuf.Colorspace.RGB, 8)
         return data
 
 
@@ -74,7 +72,7 @@ class TextIcon(Icon):
 
         layout = pangocairo_context.create_layout()
         fontname = "Sans"
-        font = pango.FontDescription(fontname + " 10")
+        font = Pango.FontDescription(fontname + " 10")
         layout.set_font_description(font)
 
         layout.set_text(self.text)
@@ -93,5 +91,5 @@ class TextIcon(Icon):
 def generate_text_icon(text, size, cache=False, color=(0, 0, 0),
                        out_format=FORMAT_ARRAY):
     icon = TextIcon(text, color, size, out_format)
-    icon.draw()
+    #icon.draw()
     return icon.get_out_data()
