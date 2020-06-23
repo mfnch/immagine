@@ -15,7 +15,9 @@
 import sys
 
 import numpy
-from gi.repository import Gtk, Pango, GdkPixbuf
+import gi
+gi.require_version('PangoCairo', '1.0')
+from gi.repository import Gtk, Pango, PangoCairo, GdkPixbuf, GLib
 import cairo
 
 (FORMAT_PIXBUF, FORMAT_ARRAY) = range(2)
@@ -39,8 +41,10 @@ class Icon(object):
         data = data.reshape(self.height, self.width, -1)
         data = data[:, :, 1:]
         if self.out_format == FORMAT_PIXBUF:
-            return GdkPixbuf.Pixbuf.new_from_array(data,
-                                                 GdkPixbuf.Colorspace.RGB, 8)
+            data = GLib.Bytes.new(data.tobytes())
+            return GdkPixbuf.Pixbuf.new_from_bytes(
+                data, GdkPixbuf.Colorspace.RGB, False, 8,
+                self.width, self.height, self.width * 3)
         return data
 
 
@@ -67,10 +71,10 @@ class TextIcon(Icon):
         scale_factor = min(self.width, self.height) / 150.0
         ctx.scale(scale_factor, scale_factor)
 
-        pangocairo_context = pangocairo.CairoContext(ctx)
-        pangocairo_context.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
+        pangocairo_context = PangoCairo.create_context(ctx)
+        #pangocairo_context.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
 
-        layout = pangocairo_context.create_layout()
+        layout = PangoCairo.create_layout(ctx)
         fontname = "Sans"
         font = Pango.FontDescription(fontname + " 10")
         layout.set_font_description(font)
@@ -84,12 +88,12 @@ class TextIcon(Icon):
         lg.add_color_stop_rgba( 1.0, r, g, b, 0.0)
         ctx.set_source(lg)
 
-        pangocairo_context.update_layout(layout)
-        pangocairo_context.show_layout(layout)
+        PangoCairo.update_layout(ctx, layout)
+        PangoCairo.show_layout(ctx, layout)
 
 
 def generate_text_icon(text, size, cache=False, color=(0, 0, 0),
                        out_format=FORMAT_ARRAY):
     icon = TextIcon(text, color, size, out_format)
-    #icon.draw()
+    icon.draw()
     return icon.get_out_data()

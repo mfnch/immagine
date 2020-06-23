@@ -248,9 +248,13 @@ class Config(object):
 
     def get_color_triple(self, name, default=None, max_value=255.0):
         color_str = self.get(name, default, COLOR)
-        if color_str is None:
-            return color_str
-        r = int(color_str[1:3], 16) / max_value
-        g = int(color_str[3:5], 16) / max_value
-        b = int(color_str[5:7], 16) / max_value
+        if color_str is None or len(color_str) < 2 or color_str[0] != '#':
+            return None
+        try:
+            color_val = int(color_str[1:], 16)
+        except:
+            return None
+        r = (color_val & 0xff) / max_value
+        g = ((color_val & 0xff00) >> 8) / max_value
+        b = ((color_val & 0xff0000) >> 16) / max_value
         return (r, g, b)

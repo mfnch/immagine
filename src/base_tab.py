@@ -32,9 +32,10 @@ def add_close_button(label):
     hb.pack_start(b, False, False, 0)
 
     # Reduce the button size as much as possible.
-    style = Gtk.RcStyle()
-    style.xthickness = style.ythickness = 0
-    b.modify_style(style)
+    # TODO: fix this
+    #style = Gtk.RcStyle()
+    #style.xthickness = style.ythickness = 0
+    #b.modify_style(style)
     hb.show_all()
     return (b, hb)
 

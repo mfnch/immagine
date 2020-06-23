@@ -9,7 +9,7 @@ Status
 
 This software is under development. It can be used already, despite not being
 feature complete. The user should expect bugs and misbehaviours here and there.
-Use at your own risk! Contributions are welcome.
+Contributions are welcome.
 
 Design considerations
 =====================
@@ -37,4 +37,5 @@ Design choices
 - Only Linux distros are targetted. No support for Windows or Mac OS is
   contemplated.
 
-- The image viewer is written in Python and PyGTK is used for the GUI.
+- The image viewer is written in Python 3 and GObject Introspection (GI) is
+  used for the GUI.

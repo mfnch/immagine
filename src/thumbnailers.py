@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import os
-import numpy
+import numpy as np
 import PIL.Image
-from gi.repository import Gtk
+from gi.repository import Gtk, GdkPixbuf, GLib
 
 from . import icons
 from .file_utils import pick_files
@@ -32,9 +32,9 @@ def open_image(file_name, load=False):
 
 def build_empty_thumbnail(size):
     sx, sy = size
-    pixbuf = GdkPixbuf.Pixbuf(GdkPixbuf.Colorspace.RGB, False, 8, sx, sy)
+    pixbuf = GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB, False, 8, sx, sy)
     pixbuf.fill(0x7f7f7f7f)
-    pixbuf.subpixbuf(1, 1, sx - 2, sy - 2).fill(0xffffffff)
+    pixbuf.new_subpixbuf(1, 1, sx - 2, sy - 2).fill(0xffffffff)
     return pixbuf
 
 def to_rgb(image, bg=(127, 127, 127)):
@@ -64,7 +64,7 @@ def build_image_thumbnail(image_path, size):
 
     if image.size != size:
         logger.debug('got {}, required {}'.format(image.size, size))
-    return numpy.array(to_rgb(image))
+    return np.array(to_rgb(image))
 
 def build_directory_thumbnail(dir_path, size, **kwargs):
     kwargs.setdefault('show_hidden_files', False)
@@ -122,18 +122,24 @@ def build_directory_thumbnail(dir_path, size, **kwargs):
         cut_size = ((ox, int(round(dy*ox/dx)))
                     if dest_aspect >= orig_aspect
                     else (int(round(dx*oy/dy)), oy))
-        cut_pos = ((ox - cut_size[0])//2, (oy - cut_size[1])//2)
+        cut_pos = ((ox - cut_size[0]) // 2, (oy - cut_size[1]) // 2)
         cut_image = image.crop((cut_pos[0], cut_pos[1],
                                 cut_pos[0] + cut_size[0],
                                 cut_pos[1] + cut_size[1]))
         cut_image = _resize_image(cut_image, (dx, dy))
-        arr = numpy.array(cut_image)
-        if arr.ndim != 3 or arr.dtype != numpy.uint8 or arr.shape[-1] != 3:
+        arr = np.array(cut_image)
+        if arr.ndim != 3 or arr.dtype != np.uint8 or arr.shape[-1] != 3:
             continue
-        cut_pixmap = \
-          GdkPixbuf.Pixbuf.new_from_array(arr, GdkPixbuf.Colorspace.RGB, 8)
+        data = GLib.Bytes.new(arr.data.tobytes())
+        cut_pixmap = GdkPixbuf.Pixbuf.new_from_bytes(
+            data, GdkPixbuf.Colorspace.RGB, False, 8,
+            arr.shape[1], arr.shape[0], arr.shape[1] * arr.shape[2])
+
         width = min(cut_pixmap.get_width(), size[0] - dpx)
         height = min(cut_pixmap.get_height(), size[1] - dpy)
         cut_pixmap.copy_area(0, 0, width, height, out, dpx, dpy)
 
-    return out.get_pixels_array().copy()
+    ret = np.frombuffer(out.get_pixels(), dtype=np.uint8)
+    shape = (out.get_height(), out.get_width(), out.get_n_channels())
+    strides = (out.get_rowstride(), out.get_n_channels(), 1)
+    return np.lib.stride_tricks.as_strided(ret, shape=shape, strides=strides)

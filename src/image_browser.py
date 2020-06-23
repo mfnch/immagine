@@ -55,11 +55,6 @@ class ImageBrowser(Gtk.DrawingArea, Gtk.Scrollable, BackCaller):
         self._hadjustment = hadjustment
         self._vadjustment = vadjustment
 
-        # Signal handlers for the value-changed signal of the two adjustment
-        # objects used for the horizontal and vertical scrollbars
-        self._hadj_valchanged_handler = None
-        self._vadj_valchanged_handler = None
-
         self.orchestrator = Orchestrator()
         self.orchestrator.set_callback('thumbnail_available',
                                        self.on_thumbnail_available)
@@ -70,10 +65,10 @@ class ImageBrowser(Gtk.DrawingArea, Gtk.Scrollable, BackCaller):
         # Allow the object to receive scroll events and other events.
         self.add_events(Gdk.EventMask.POINTER_MOTION_MASK |
                         Gdk.EventMask.BUTTON_PRESS_MASK |
-                        Gdk.EventMask.BUTTON_RELEASE_MASK)
+                        Gdk.EventMask.BUTTON_RELEASE_MASK |
+                        Gdk.EventMask.SCROLL_MASK)
 
-        #self.connect('expose_event', self.on_expose_event)
-        self.connect('set-scroll-adjustment', ImageBrowser.scroll_adjustment)
+        self.connect('draw', self.on_draw_event)
         self.connect('configure-event', self.on_size_change)
         self.connect('button-press-event', self.on_button_press_event)
         self.connect('query-tooltip', self.on_query_tooltip)
@@ -90,24 +85,58 @@ class ImageBrowser(Gtk.DrawingArea, Gtk.Scrollable, BackCaller):
         return (int(max(min_x, min(scr_x // 2, thumb_x*scale))),
                 int(max(min_y, min(scr_y // 2, thumb_y*scale))))
 
-    def _get_hadjustment(self):
+    def get_widget_size(self):
+        return (self.get_allocated_width(), self.get_allocated_height())
+
+    def set_hadjustment(self, adjustment):
+        self._hadjustment = ha = adjustment
+        if ha is None:
+            return
+        ha.set_lower(0.0)
+        ha.set_upper(1.0)
+        ha.set_value(0.0)
+        ha.set_page_size(1.0)
+        ha.set_page_increment(0.0)
+        ha.set_step_increment(0.05)
+        ha.connect("value-changed", self._adjustments_changed)
+
+    def get_hadjustment(self):
         return self._hadjustment
 
-    def _get_vadjustment(self):
+    hadjustment = GObject.Property(type=Gtk.Adjustment,
+                                   default=None,
+                                   getter=get_hadjustment,
+                                   setter=set_hadjustment)
+
+    def get_vadjustment(self):
         return self._vadjustment
 
-    def _set_hadjustment(self, adjustment):
-        self._hadjustment = adjustment
+    def set_vadjustment(self, adjustment):
+        self._vadjustment = va = adjustment
+        if va is None:
+            return
+        va.set_lower(0.0)
+        va.set_upper(1.0)
+        va.set_value(0.0)
+        va.set_page_size(1.0)
+        va.set_page_increment(0.0)
+        va.set_step_increment(0.05)
+        va.connect("value-changed", self._adjustments_changed)
 
-    def _set_vadjustment(self, adjustment):
-        self._vadjustment = adjustment
+    vadjustment = GObject.Property(type=Gtk.Adjustment,
+                                   default=None,
+                                   getter=get_vadjustment,
+                                   setter=set_vadjustment)
 
-    hadjustment = property(_get_hadjustment, _set_hadjustment)
-    vadjustment = property(_get_vadjustment, _set_vadjustment)
+    hscroll_policy = GObject.Property(type=Gtk.ScrollablePolicy,
+                                      default=Gtk.ScrollablePolicy.NATURAL)
+
+    vscroll_policy = GObject.Property(type=Gtk.ScrollablePolicy,
+                                      default=Gtk.ScrollablePolicy.NATURAL)
 
     def _lay_out_album(self, width=None):
         if width is None:
-            width, _ = self.window.get_size()
+            width, _ = self.get_widget_size()
 
         # Create the file list based on the current configuration.
         cfg = self._config
@@ -124,17 +153,6 @@ class ImageBrowser(Gtk.DrawingArea, Gtk.Scrollable, BackCaller):
                                        max_size=cfg.get('thumb.final_size'),
                                        border=cfg.get('thumb.border', (5, 5)))
 
-    def scroll_adjustment(self, hadjustment, vadjustment):
-        self._hadjustment = hadjustment
-        self._vadjustment = vadjustment
-        if isinstance(hadjustment, Gtk.Adjustment):
-            self._hadj_valchanged_handler = \
-                hadjustment.connect("value-changed", self._adjustments_changed)
-        if isinstance(vadjustment, Gtk.Adjustment):
-            self._vadj_valchanged_handler = \
-                vadjustment.connect("value-changed", self._adjustments_changed)
-            self._update_scrollbars()
-
     def _set_y_location(self):
         value = self._vadjustment.get_value()
         upper = self._vadjustment.get_upper()
@@ -148,50 +166,34 @@ class ImageBrowser(Gtk.DrawingArea, Gtk.Scrollable, BackCaller):
         self._set_y_location()
         self.queue_draw()
 
+    def scroll_adjustment(self, hadjustment, vadjustment):
+        self._hadjustment = hadjustment
+        self._vadjustment = vadjustment
+        if isinstance(hadjustment, Gtk.Adjustment):
+            self._hadj_valchanged_handler = \
+                hadjustment.connect("value-changed", self._adjustments_changed)
+
     def _update_scrollbars(self):
         '''(internal) Update the ranges and positions of the scrollbars.'''
 
-        ha = self._hadjustment
-        va = self._vadjustment
-
-        # For now we do not need an horizontal bar.
-        ha.lower = 0.0
-        ha.upper = 1.0
-        ha.value = 0.0
-        ha.page_size = 1.0
-        ha.page_increment = 0.0
-        ha.step_increment = 0.05
-
-        if self.album is None:
-            va.lower = 0.0
-            va.upper = 1.0
-            va.value = 0.0
-            va.page_size = 1.0
-            va.page_increment = 0.0
-            va.step_increment = 0.05
-            return
-
-        if self.window is None:
-            window_height = 100
-            va.value = 0.0
-        else:
-            window_size = self.window.get_size()
-            window_height = window_size[1]
+        window_size = self.get_widget_size()
+        window_height = window_size[1]
 
         # When resizing the window we want to make sure we view roughly the
         # same images we saw before the resize.
-        old_album_height = va.upper
+        va = self._vadjustment
+        old_album_height = va.get_upper()
         new_album_height = self.album.get_height() + 5
-        relative_pos = va.value / float(old_album_height)
+        relative_pos = va.get_value() / float(old_album_height)
         new_value = relative_pos * new_album_height
 
         # Set the new view, making sure it is within the interval.
-        va.lower = 0.0
-        va.upper = new_album_height
-        va.page_size = window_height
-        va.page_increment = 0.9*window_height
-        va.step_increment = 0.3*window_height
-        va.value = max(0, min(new_value, new_album_height - window_height))
+        va.set_lower(0.0)
+        va.set_upper(new_album_height)
+        va.set_page_size(window_height)
+        va.set_page_increment(0.9 * window_height)
+        va.set_step_increment(0.3 * window_height)
+        va.set_value(max(0, min(new_value, new_album_height - window_height)))
 
     def get_thumbnail_pixbuf(self, thumbnail):
         '''Get the pixbuf (possibly from the cache) for the given Thumbnail
@@ -203,9 +205,13 @@ class ImageBrowser(Gtk.DrawingArea, Gtk.Scrollable, BackCaller):
             tn = self.orchestrator.request_thumbnail(file_item.full_path,
                                                      thumbnail.size)
             if tn.state is THUMBNAIL_DONE:
-                return \
-                    GdkPixbuf.Pixbuf.new_from_array(tn.data,
-                                                  GdkPixbuf.Colorspace.RGB, 8)
+                height, width, num_components = tn.data.shape
+                rowstride = width * num_components
+                # TODO: avoid doing so many copies of the data.
+                data = GLib.Bytes.new(tn.data.tobytes())
+                return GdkPixbuf.Pixbuf.new_from_bytes(
+                    data, GdkPixbuf.Colorspace.RGB, False, 8,
+                    width, height, rowstride)
             text = 'Loading...\n' + os.path.basename(file_item.name)
             icon_color = self._config.get_color_triple('thumb.color.loading',
                                                        '#ff0000')
@@ -217,24 +223,30 @@ class ImageBrowser(Gtk.DrawingArea, Gtk.Scrollable, BackCaller):
         return icons.generate_text_icon(text, thumbnail.size, cache=True,
                                         color=icon_color,
                                         out_format=icons.FORMAT_PIXBUF)
-        return build_empty_thumbnail(thumbnail.size)
 
     def on_thumbnail_available(self, *args):
         '''Called by the orchestrator when thumbnails become available.'''
 
         # As this function is called by a separate thread, we take the lock.
-        with Gdk.lock:
+        try:
+            Gdk.threads_enter()
             self.queue_draw()
+        finally:
+            Gdk.threads_leave()
 
-    def on_expose_event(self, draw_area, event):
+    def on_draw_event(self, widget, context):
         '''Function responsible for the rendering of the widget.'''
 
+        ok, r = Gdk.cairo_get_clip_rectangle(context)
+        if not ok:
+            L.error('Failed getting clip rectangle in ZoomableArea.draw')
+            return False
+
         dy = self._get_y_location()
-        ea = event.area
 
         # Compute viewport coordinates.
-        vp_x0, vp_y0 = (ea.x, ea.y + dy)
-        vp_width, vp_height = (ea.width, ea.height)
+        vp_x0, vp_y0 = (r.x, r.y + dy)
+        vp_width, vp_height = (r.width, r.height)
         vp_x1 = vp_x0 + vp_width
         vp_y1 = vp_y0 + vp_height
 
@@ -250,13 +262,11 @@ class ImageBrowser(Gtk.DrawingArea, Gtk.Scrollable, BackCaller):
             if sx <= 0 or sy <= 0:
                 logger.debug('Error: sx={}, sy={}'.format(sx, sy))
                 continue
-            buf_area = pixbuf.subpixbuf(x0 - x, y0 - y, sx, sy)
-            rowstride = buf_area.get_rowstride()
-            pixels = buf_area.get_pixels()
-            self.window.draw_rgb_image(self.style.black_gc,
-                                       x0, y0 - dy, sx, sy,
-                                       'normal', pixels, rowstride,
-                                       x0, y0 - dy)
+            buf_area = pixbuf.new_subpixbuf(x0 - x, y0 - y, sx, sy)
+
+            Gdk.cairo_set_source_pixbuf(context, buf_area, x0, y0 - dy)
+            context.paint()
+
         return True
 
     def on_size_change(self, myself, event):
@@ -378,5 +388,3 @@ class ImageBrowser(Gtk.DrawingArea, Gtk.Scrollable, BackCaller):
             cfg.set('thumb.scale_exp', prev_scale_exp)
             return
         self.update_album()
-
-#ImageBrowser.set_set_scroll_adjustments_signal('set-scroll-adjustment')

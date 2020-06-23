@@ -113,10 +113,10 @@ class ApplicationMainWindow(Gtk.Window):
         self.add(self.window_content)
 
         # Allow the window to get events.
-        self.add_events(Gdk.EventMask.KEY_PRESS_MASK |
-                        Gdk.EventMask.POINTER_MOTION_MASK)
         self.connect('key-press-event', self.on_key_press_event)
         self.connect("motion_notify_event", self.on_motion_notify_event)
+        self.add_events(Gdk.EventMask.KEY_PRESS_MASK |
+                        Gdk.EventMask.POINTER_MOTION_MASK)
 
         self.show_all()
 
@@ -470,5 +470,5 @@ def main(args=None):
         Gdk.threads_enter()
         ApplicationMainWindow(dir_path, img_paths, config=cfg)
         Gtk.main()
-    except:
+    finally:
         Gdk.threads_leave()

@@ -1,4 +1,4 @@
-# Copyright 2016, 2017 Matteo Franchin
+# Copyright 2016, 2017, 2020 Matteo Franchin
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk, GdkPixbuf
 
 from .base_tab import BaseTab
 from .config import Config, COLOR
@@ -58,16 +58,20 @@ class ViewerTab(BaseTab):
         sw.add(vp)
 
         # Set color in the viewport around the picture.
-        color = self._config.get('viewer.bg_color', '#000', COLOR)
-        vp.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(color))
-        eb.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(color))
+        rgb = self._config.get_color_triple('viewer.bg_color', '#000')
+        if rgb is not None:
+            color = Gdk.RGBA(*rgb)
+            vp.override_background_color(Gtk.StateFlags.NORMAL, color)
+            eb.override_background_color(Gtk.StateFlags.NORMAL, color)
 
         self.pack_start(self.toolbar, False, True, 0)
         self.pack_start(sw, True, True, 0)
 
-        eb.connect('size-allocate', self.on_size_allocate)
-        eb.connect('scroll_event', self.on_scroll_event)
         self.close_button.connect('clicked', self.close_tab)
+
+        eb.connect('size-allocate', self.on_size_allocate)
+        eb.connect('scroll-event', self.on_scroll_event)
+        eb.add_events(Gdk.EventMask.SCROLL_MASK)
 
     def on_size_allocate(self, widget, allocation):
         if self.size == None:
@@ -110,17 +114,19 @@ class ViewerTab(BaseTab):
             return False
         name += dir_name[event.direction]
 
-        if name in ('scroll:up', 'scroll:down'):
+        if name == 'scroll:up':
+            event.direction = Gdk.ScrollDirection.UP
+        elif name == 'scroll:down':
+            event.direction = Gdk.ScrollDirection.DOWN
+        elif name == 'ctrl+scroll:up':
+            event.direction = Gdk.ScrollDirection.LEFT
+        elif name == 'ctrl+scroll:down':
+            event.direction = Gdk.ScrollDirection.RIGHT
+        elif name in ('shift+scroll:up', 'shift+scroll:down'):
             mouse_ptr = (event.x, event.y)
             fn = (self.zoom_in if name == 'scroll:up' else self.zoom_out)
             fn(zoom_factor=1.1)
             return True
-        elif name in ('ctrl+scroll:up', 'ctrl+scroll:down'):
-            pass
-        elif name == 'shift+scroll:up':
-            event.direction = Gdk.ScrollDirection.LEFT
-        elif name == 'shift+scroll:down':
-            event.direction = Gdk.ScrollDirection.RIGHT
         return False
 
     def close_tab(self, action=None):

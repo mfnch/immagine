@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2016 Matteo Franchin
+# Copyright 2016, 2020 Matteo Franchin
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,18 +17,17 @@
 import os
 from setuptools import setup
 
-# Get app information from version file.
-info = {}
-root_dir = os.path.dirname(os.path.realpath(__file__))
-execfile(os.path.join(root_dir, 'src', 'version.py'), info)
+# Get the version by importing the package locally.
+from src.version import version
 
 # Read description from README.rst.
+root_dir = os.path.dirname(os.path.realpath(__file__))
 readme_path = os.path.join(root_dir, 'README.rst')
 with open(readme_path, 'r') as f:
     long_description = f.read()
 
 setup(name='immagine',
-      version=info['version'],
+      version=version,
       description='Image viewer and browser with directory thumbnails',
       long_description=long_description,
       author='Matteo Franchin',
