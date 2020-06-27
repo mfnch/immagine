@@ -1,4 +1,4 @@
-# Copyright 2016, 2017 Matteo Franchin
+# Copyright 2016, 2017, 2020 Matteo Franchin
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -235,7 +235,7 @@ class Orchestrator(BackCaller):
                         .format(len(self.thumbnails)))
                 all_tns = [(tn.file_name, tn.request_id)
                            for tn in self.thumbnails.values()]
-                all_tns.sort(lambda a, b: cmp(b[1], a[1]))
+                all_tns.sort(key=lambda tn: tn[1])
                 for file_name_to_remove, _ in \
                   all_tns[self.thumbnail_soft_limit:]:
                     comment('Rm thumb {}'.format(file_name_to_remove))

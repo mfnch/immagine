@@ -339,7 +339,7 @@ class ApplicationMainWindow(Gtk.Window):
     def about_action(self, action):
         dialog = Gtk.AboutDialog()
         dialog.set_name('Immagine {}'.format(version))
-        dialog.set_copyright('\302\251 Copyright 2016, 2017 Matteo Franchin')
+        dialog.set_copyright('Copyright 2016, 2017, 2020 Matteo Franchin')
         dialog.set_website('https://github.com/mfnch/immagine')
         dialog.connect('response', lambda d, r: d.destroy())
         dialog.show()
